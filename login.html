@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Login — Direção de Turma</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="js/core/config.js"></script>
+    <script src="js/core/auth.js"></script>
+  </head>
+  <body>
+    <main class="login-container">
+      <div class="login-card">
+        <div class="login-header">
+          <img src="assets/logo.png" alt="Logo" class="login-logo" />
+          <h2>DIREÇÃO DE TURMA</h2>
+          <p>Comunidade CSJ Ramalhão</p>
+        </div>
+
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <div class="input-with-icon">
+              <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+              </svg>
+              <input type="email" id="email" required class="form-control" placeholder="exemplo@colegio-ramalhao.com" autofocus />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Palavra-passe</label>
+            <div class="input-with-icon">
+              <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 17a2 2 0 100-4 2 2 0 000 4zm6-7h-1V7a5 5 0 00-10 0v3H6a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2zM8 7a4 4 0 018 0v3H8V7z" />
+              </svg>
+              <input type="password" id="password" required class="form-control" placeholder="••••••••" />
+            </div>
+          </div>
+
+          <div id="msg" style="margin-top: 16px"></div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 24px">
+            Entrar
+          </button>
+        </form>
+      </div>
+    </main>
+
+    <script>
+      (async () => {
+        if (window.supabaseReady) await window.supabaseReady;
+
+        try {
+          const { data } = await window.supabase.auth.getSession();
+          if (data?.session) {
+            window.location.href = "index.html";
+            return;
+          }
+        } catch (e) {
+          console.warn("No active session", e);
+        }
+
+        const form = document.getElementById("loginForm");
+        const msg = document.getElementById("msg");
+
+        function showMessage(text, isError = true) {
+          if (!text) {
+            msg.innerHTML = "";
+            return;
+          }
+          msg.innerHTML = `<div class="alert ${isError ? "alert-error" : "alert-success"}">${text}</div>`;
+        }
+
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          showMessage("");
+          const email = document.getElementById("email").value.trim().toLowerCase();
+          const password = document.getElementById("password").value;
+          const submitBtn = form.querySelector("button[type=submit]");
+          submitBtn.disabled = true;
+          submitBtn.textContent = "A entrar…";
+
+          const { error } = await signIn(email, password);
+          if (error) {
+            showMessage("Erro: " + error.message);
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Entrar";
+            return;
+          }
+          window.location.href = "index.html";
+        });
+      })();
+    </script>
+    <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
+      made by antonio.appleton | Departamento de Programação
+    </footer>
+  </body>
+</html>

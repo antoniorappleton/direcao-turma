@@ -1,0 +1,18 @@
+[
+  {
+    "id": "mock-turma-1",
+    "nome": "A",
+    "ano": 9,
+    "ciclo": "3º Ciclo",
+    "diretor_turma": "João Pedro Marques Sobral",
+    "total_alunos": 33
+  },
+  {
+    "id": "mock-turma-2",
+    "nome": "B",
+    "ano": 9,
+    "ciclo": "3º Ciclo",
+    "diretor_turma": "Carolina Antunes Borges",
+    "total_alunos": 31
+  }
+]
