@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Direção de Turma</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="js/core/config.js"></script>
+    <script src="js/core/session.js"></script>
+    <script src="js/core/auth.js"></script>
+    <script src="js/core/permissions.js"></script>
+    <script src="js/services/turmas.service.js"></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="index.html" class="brand">
+        <img src="assets/logo.png" alt="Direção de Turma" class="brand-logo" />
+        <div class="brand-text">
+          <h1>DIREÇÃO DE TURMA</h1>
+          <div class="tag">Comunidade CSJ Ramalhão</div>
+        </div>
+      </a>
+      <nav class="nav-menu">
+        <a href="index.html" class="active">As Minhas Turmas</a>
+        <button id="signOutBtn">Sair</button>
+      </nav>
+    </header>
+
+    <main class="app-container">
+      <div style="margin-bottom: 24px">
+        <h2 style="font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text-main)">
+          As Minhas Turmas
+        </h2>
+        <p style="color: var(--text-muted); font-size: 14px" id="welcomeMsg"></p>
+      </div>
+
+      <div id="turmasList" class="admin-list-container">
+        <div class="admin-list-item" style="color: var(--text-muted)">A carregar turmas...</div>
+      </div>
+    </main>
+
+    <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
+      made by antonio.appleton | Departamento de Programação
+    </footer>
+
+    <script>
+      (async () => {
+        const session = await requireSession("login.html");
+        if (!session) return;
+
+        const professor = await getCurrentProfessor();
+        const welcomeEl = document.getElementById("welcomeMsg");
+        if (welcomeEl && professor) {
+          welcomeEl.textContent = `Olá, ${professor.nome || professor.email}`;
+        }
+
+        document.getElementById("signOutBtn")?.addEventListener("click", signOut);
+
+        const listEl = document.getElementById("turmasList");
+        try {
+          const todasTurmas = await TurmasService.getAll();
+          const turmas = isAdmin(professor)
+            ? todasTurmas
+            : todasTurmas.filter((t) => isDiretorDaTurma(professor, t));
+
+          if (!turmas.length) {
+            listEl.innerHTML =
+              '<div class="admin-list-item" style="color: var(--text-muted)">Ainda não és diretor de turma de nenhuma turma.</div>';
+            return;
+          }
+
+          listEl.innerHTML = turmas
+            .map(
+              (t) => `
+              <a href="turma.html?id=${t.id}" class="admin-list-item" style="text-decoration: none; color: inherit">
+                <div>
+                  <strong>${t.nome} (${t.ano}º ano)</strong>
+                  <span style="color: var(--text-muted); font-size: 12px; display: block">
+                    ${t.ciclos?.nome || ""}
+                  </span>
+                </div>
+              </a>`,
+            )
+            .join("");
+        } catch (e) {
+          console.error(e);
+          listEl.innerHTML =
+            '<div class="admin-list-item" style="color: var(--error)">Erro ao carregar turmas.</div>';
+        }
+      })();
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("service-worker.js").catch(console.error);
+      }
+    </script>
+  </body>
+</html>

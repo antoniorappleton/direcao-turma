@@ -1,0 +1,23 @@
+-- EXEMPLO de política RLS para restringir alunos por diretor de turma.
+--
+-- NÃO CORRER AINDA: `alunos` e `turmas` são usados em produção pelo
+-- Scriptorium com a chave anon sem RLS ativo. Ativar RLS aqui sem testar
+-- com cuidado pode bloquear consultas que o Scriptorium já faz hoje.
+-- Só ativar depois de confirmar todas as políticas necessárias para ambas
+-- as apps (Scriptorium + Direção de Turma).
+
+-- ALTER TABLE alunos ENABLE ROW LEVEL SECURITY;
+--
+-- CREATE POLICY "dt_ve_alunos_da_sua_turma"
+-- ON alunos FOR SELECT
+-- USING (
+--   turma_id IN (
+--     SELECT t.id FROM turmas t
+--     JOIN professores p ON p.nome = t.diretor_turma
+--     WHERE p.email = auth.jwt() ->> 'email'
+--   )
+--   OR EXISTS (
+--     SELECT 1 FROM professores
+--     WHERE email = auth.jwt() ->> 'email' AND role IN ('admin', 'direcao')
+--   )
+-- );

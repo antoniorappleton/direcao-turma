@@ -1,0 +1,22 @@
+[
+  {
+    "id": "mock-aluno-1",
+    "nome": "Afonso Maria Alves Batista",
+    "numero_interno": 2044,
+    "ano": 9,
+    "turma_id": "mock-turma-1",
+    "encarregados": [
+      { "nome": "Maria Batista", "relacao": "Mãe", "principal": true, "telefone": "912345678" }
+    ]
+  },
+  {
+    "id": "mock-aluno-2",
+    "nome": "Carolina Antunes Borges",
+    "numero_interno": 836,
+    "ano": 9,
+    "turma_id": "mock-turma-2",
+    "encarregados": [
+      { "nome": "Rui Borges", "relacao": "Pai", "principal": true, "telefone": "913456789" }
+    ]
+  }
+]
