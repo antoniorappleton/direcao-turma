@@ -1,5 +1,15 @@
 // Gestão de sessão — mesma conta "professores" partilhada com o Scriptorium.
 
+// Depois de "Sair", o browser pode restaurar esta página a partir da cache
+// (bfcache) ao premir "retroceder", sem voltar a correr o requireSession()
+// abaixo. Forçar reload garante que o guard corre sempre e expulsa para
+// login.html se já não houver sessão.
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
+
 async function getCurrentSession() {
   if (window.supabaseReady) await window.supabaseReady;
   const { data } = await window.supabase.auth.getSession();

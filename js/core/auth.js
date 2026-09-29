@@ -13,7 +13,11 @@ async function signOut() {
       alert("Erro no logout: " + error.message);
       return;
     }
-    window.location.href = "login.html";
+    // Volta ao hub da Comunidade (não à login.html desta app) — ver
+    // https://antoniorappleton.github.io/, que lista todas as apps.
+    // replace() em vez de href: não deixa esta página autenticada no
+    // histórico, para "retroceder" não voltar a mostrá-la.
+    window.location.replace("https://antoniorappleton.github.io/");
   } catch (e) {
     console.error("signOut error", e);
     alert("Erro no logout");
