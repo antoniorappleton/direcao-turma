@@ -14,7 +14,16 @@ function isAdmin(professor) {
 // professor. Esta função funciona por nome enquanto isso não muda — quando
 // `turmas.diretor_turma_id` (FK para professores) existir, trocar a
 // comparação por turma.diretor_turma_id === professor.id.
+//
+// Propositadamente sem bypass de admin: representa só "é o diretor desta
+// turma", usado para decidir "as minhas turmas" por defeito no dashboard.
+// Para controlo de acesso (pode ver esta turma, mesmo não sendo o diretor)
+// usar canAccessTurma.
 function isDiretorDaTurma(professor, turma) {
   if (!professor || !turma) return false;
-  return isAdmin(professor) || turma.diretor_turma === professor.nome;
+  return turma.diretor_turma === professor.nome;
+}
+
+function canAccessTurma(professor, turma) {
+  return isAdmin(professor) || isDiretorDaTurma(professor, turma);
 }

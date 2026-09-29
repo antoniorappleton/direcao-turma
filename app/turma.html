@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Turma — Direção de Turma</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="js/core/config.js"></script>
+    <script src="js/core/session.js"></script>
+    <script src="js/core/auth.js"></script>
+    <script src="js/core/permissions.js"></script>
+    <script src="js/services/turmas.service.js"></script>
+    <script src="js/services/alunos.service.js"></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="index.html" class="brand">
+        <img src="assets/logo.png" alt="Direção de Turma" class="brand-logo" />
+        <div class="brand-text">
+          <h1>DIREÇÃO DE TURMA</h1>
+          <div class="tag">Comunidade CSJ Ramalhão</div>
+        </div>
+      </a>
+      <nav class="nav-menu">
+        <a href="index.html">As Minhas Turmas</a>
+        <button id="signOutBtn">Sair</button>
+      </nav>
+    </header>
+
+    <main class="app-container">
+      <div id="loadingMsg" style="color: var(--text-muted); font-size: 14px">A carregar turma...</div>
+      <div id="turmaContent" style="display: none">
+        <div style="margin-bottom: 24px">
+          <a href="index.html" style="font-size: 13px; color: var(--text-muted); text-decoration: none">&larr; As Minhas Turmas</a>
+          <h2 id="turmaTitulo" style="font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text-main); margin-top: 8px"></h2>
+          <p id="turmaSubtitulo" style="color: var(--text-muted); font-size: 14px"></p>
+        </div>
+
+        <div class="app-card">
+          <div class="app-card-title">
+            <span>Alunos</span>
+            <span id="alunosCount" class="badge badge-synced"></span>
+          </div>
+
+          <div class="search-wrapper" style="margin-bottom: 16px">
+            <input type="text" id="searchAluno" class="search-input" placeholder="Pesquisar aluno..." />
+          </div>
+
+          <div id="alunosList" class="admin-list-container" style="max-height: none">
+            <div class="admin-list-item" style="color: var(--text-muted)">A carregar alunos...</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
+      made by antonio.appleton | Departamento de Programação
+    </footer>
+
+    <script>
+      (async () => {
+        const session = await requireSession("login.html");
+        if (!session) return;
+
+        document.getElementById("signOutBtn")?.addEventListener("click", signOut);
+
+        const turmaId = new URLSearchParams(location.search).get("id");
+        const loadingEl = document.getElementById("loadingMsg");
+        if (!turmaId) {
+          loadingEl.textContent = "Turma não indicada.";
+          return;
+        }
+
+        const professor = await getCurrentProfessor();
+
+        try {
+          const turma = await TurmasService.getById(turmaId);
+          if (!turma || !canAccessTurma(professor, turma)) {
+            loadingEl.textContent = "Não tens acesso a esta turma.";
+            return;
+          }
+
+          document.getElementById("turmaTitulo").textContent = `${turma.nome} (${turma.ano}º ano)`;
+          document.getElementById("turmaSubtitulo").textContent = turma.ciclos?.nome || "";
+
+          const alunos = await AlunosService.getByTurma(turmaId);
+          const listEl = document.getElementById("alunosList");
+          document.getElementById("alunosCount").textContent = `${alunos.length} aluno${alunos.length === 1 ? "" : "s"}`;
+
+          function renderAlunos(items) {
+            if (!items.length) {
+              listEl.innerHTML = '<div class="admin-list-item" style="color: var(--text-muted)">Nenhum aluno encontrado.</div>';
+              return;
+            }
+            listEl.innerHTML = items
+              .map(
+                (a) => `
+                <a href="aluno.html?id=${a.id}" class="admin-list-item" style="text-decoration: none; color: inherit">
+                  <div><strong>${a.nome}</strong></div>
+                  <span style="color: var(--text-muted); font-size: 12px">${a.numero_interno ?? ""}</span>
+                </a>`,
+              )
+              .join("");
+          }
+
+          renderAlunos(alunos);
+
+          document.getElementById("searchAluno").addEventListener("input", (e) => {
+            const q = e.target.value.trim().toLowerCase();
+            renderAlunos(alunos.filter((a) => a.nome?.toLowerCase().includes(q)));
+          });
+
+          loadingEl.style.display = "none";
+          document.getElementById("turmaContent").style.display = "block";
+        } catch (e) {
+          console.error(e);
+          loadingEl.textContent = "Erro ao carregar turma.";
+        }
+      })();
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("service-worker.js").catch(console.error);
+      }
+    </script>
+  </body>
+</html>
