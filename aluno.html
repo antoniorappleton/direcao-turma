@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Aluno — Direção de Turma</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="js/core/config.js"></script>
+    <script src="js/core/session.js"></script>
+    <script src="js/core/auth.js"></script>
+    <script src="js/core/permissions.js"></script>
+    <script src="js/utils/dates.js"></script>
+    <script src="js/services/turmas.service.js"></script>
+    <script src="js/services/alunos.service.js"></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="index.html" class="brand">
+        <img src="assets/logo.png" alt="Direção de Turma" class="brand-logo" />
+        <div class="brand-text">
+          <h1>DIREÇÃO DE TURMA</h1>
+          <div class="tag">Comunidade CSJ Ramalhão</div>
+        </div>
+      </a>
+      <nav class="nav-menu">
+        <a href="index.html">As Minhas Turmas</a>
+        <button id="signOutBtn">Sair</button>
+      </nav>
+    </header>
+
+    <main class="app-container">
+      <div id="loadingMsg" style="color: var(--text-muted); font-size: 14px">A carregar aluno...</div>
+      <div id="alunoContent" style="display: none">
+        <div style="margin-bottom: 24px">
+          <a id="voltarTurmaLink" href="index.html" style="font-size: 13px; color: var(--text-muted); text-decoration: none">&larr; Voltar à turma</a>
+          <h2 id="alunoNome" style="font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text-main); margin-top: 8px"></h2>
+          <p id="alunoSubtitulo" style="color: var(--text-muted); font-size: 14px"></p>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="sidebar-section">
+            <div class="app-card">
+              <div class="app-card-title"><span>Encarregados de Educação</span></div>
+              <div id="encarregadosList" class="admin-list-container" style="max-height: none"></div>
+            </div>
+
+            <div class="app-card">
+              <div class="app-card-title"><span>Histórico de Matrículas</span></div>
+              <div id="matriculasList" class="admin-list-container" style="max-height: none"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
+      made by antonio.appleton | Departamento de Programação
+    </footer>
+
+    <script>
+      (async () => {
+        const session = await requireSession("login.html");
+        if (!session) return;
+
+        document.getElementById("signOutBtn")?.addEventListener("click", signOut);
+
+        const alunoId = new URLSearchParams(location.search).get("id");
+        const loadingEl = document.getElementById("loadingMsg");
+        if (!alunoId) {
+          loadingEl.textContent = "Aluno não indicado.";
+          return;
+        }
+
+        const professor = await getCurrentProfessor();
+
+        try {
+          const aluno = await AlunosService.getById(alunoId);
+          if (!aluno) {
+            loadingEl.textContent = "Aluno não encontrado.";
+            return;
+          }
+
+          const turma = aluno.turma_id ? await TurmasService.getById(aluno.turma_id) : null;
+          if (!canAccessTurma(professor, turma || {})) {
+            loadingEl.textContent = "Não tens acesso a este aluno.";
+            return;
+          }
+
+          document.getElementById("alunoNome").textContent = aluno.nome;
+          document.getElementById("alunoSubtitulo").textContent = [
+            aluno.numero_interno ? `Nº ${aluno.numero_interno}` : null,
+            turma ? `${turma.nome} (${turma.ano}º ano)` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+
+          const voltarLink = document.getElementById("voltarTurmaLink");
+          if (turma) {
+            voltarLink.href = `turma.html?id=${turma.id}`;
+            voltarLink.textContent = `← Voltar à turma ${turma.nome}`;
+          }
+
+          const encarregadosEl = document.getElementById("encarregadosList");
+          const encarregados = (aluno.aluno_encarregados || []).map((rel) => ({ ...rel.encarregados, ...rel }));
+          encarregadosEl.innerHTML = encarregados.length
+            ? encarregados
+                .map(
+                  (e) => `
+                  <div class="admin-list-item">
+                    <div>
+                      <strong>${e.nome || ""}</strong>
+                      <span style="color: var(--text-muted); font-size: 12px; display: block">
+                        ${[e.telefone, e.email].filter(Boolean).join(" · ")}
+                      </span>
+                    </div>
+                    <div>
+                      ${e.principal ? '<span class="badge badge-synced">Principal</span>' : ""}
+                      ${e.responsavel_legal ? '<span class="badge badge-pending">Resp. legal</span>' : ""}
+                    </div>
+                  </div>`,
+                )
+                .join("")
+            : '<div class="admin-list-item" style="color: var(--text-muted)">Sem encarregados registados.</div>';
+
+          const matriculasEl = document.getElementById("matriculasList");
+          const matriculas = await AlunosService.getHistoricoMatriculas(alunoId);
+          matriculasEl.innerHTML = matriculas.length
+            ? matriculas
+                .map(
+                  (m) => `
+                  <div class="admin-list-item">
+                    <div>
+                      <strong>${m.turmas?.nome || ""} ${m.turmas?.ano ? `(${m.turmas.ano}º ano)` : ""}</strong>
+                      <span style="color: var(--text-muted); font-size: 12px; display: block">
+                        ${m.anos_letivos?.nome || ""} · ${formatDate(m.data_inicio)}${m.data_fim ? ` a ${formatDate(m.data_fim)}` : ""}
+                      </span>
+                    </div>
+                    <span class="badge ${m.estado === "ativa" ? "badge-synced" : "badge-pending"}">${m.estado || ""}</span>
+                  </div>`,
+                )
+                .join("")
+            : '<div class="admin-list-item" style="color: var(--text-muted)">Sem histórico de matrículas.</div>';
+
+          loadingEl.style.display = "none";
+          document.getElementById("alunoContent").style.display = "block";
+        } catch (e) {
+          console.error(e);
+          loadingEl.textContent = "Erro ao carregar aluno.";
+        }
+      })();
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("service-worker.js").catch(console.error);
+      }
+    </script>
+  </body>
+</html>

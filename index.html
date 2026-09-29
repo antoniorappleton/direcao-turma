@@ -29,11 +29,14 @@
     </header>
 
     <main class="app-container">
-      <div style="margin-bottom: 24px">
-        <h2 style="font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text-main)">
-          As Minhas Turmas
-        </h2>
-        <p style="color: var(--text-muted); font-size: 14px" id="welcomeMsg"></p>
+      <div style="margin-bottom: 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+        <div>
+          <h2 id="turmasTitulo" style="font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text-main)">
+            As Minhas Turmas
+          </h2>
+          <p style="color: var(--text-muted); font-size: 14px" id="welcomeMsg"></p>
+        </div>
+        <button id="toggleTurmasBtn" class="btn btn-secondary" style="display: none"></button>
       </div>
 
       <div id="turmasList" class="admin-list-container">
@@ -59,18 +62,15 @@
         document.getElementById("signOutBtn")?.addEventListener("click", signOut);
 
         const listEl = document.getElementById("turmasList");
-        try {
-          const todasTurmas = await TurmasService.getAll();
-          const turmas = isAdmin(professor)
-            ? todasTurmas
-            : todasTurmas.filter((t) => isDiretorDaTurma(professor, t));
+        const tituloEl = document.getElementById("turmasTitulo");
+        const toggleBtn = document.getElementById("toggleTurmasBtn");
 
+        function render(turmas) {
           if (!turmas.length) {
             listEl.innerHTML =
               '<div class="admin-list-item" style="color: var(--text-muted)">Ainda não és diretor de turma de nenhuma turma.</div>';
             return;
           }
-
           listEl.innerHTML = turmas
             .map(
               (t) => `
@@ -84,6 +84,28 @@
               </a>`,
             )
             .join("");
+        }
+
+        try {
+          const todasTurmas = await TurmasService.getAll();
+          const minhasTurmas = todasTurmas.filter((t) => isDiretorDaTurma(professor, t));
+
+          let aMostrarTodas = false;
+          render(minhasTurmas);
+
+          if (isAdmin(professor)) {
+            toggleBtn.style.display = "inline-flex";
+            const atualizarToggle = () => {
+              toggleBtn.textContent = aMostrarTodas ? "Ver só as minhas turmas" : "Ver todas as turmas";
+              tituloEl.textContent = aMostrarTodas ? "Todas as Turmas" : "As Minhas Turmas";
+            };
+            atualizarToggle();
+            toggleBtn.addEventListener("click", () => {
+              aMostrarTodas = !aMostrarTodas;
+              render(aMostrarTodas ? todasTurmas : minhasTurmas);
+              atualizarToggle();
+            });
+          }
         } catch (e) {
           console.error(e);
           listEl.innerHTML =
