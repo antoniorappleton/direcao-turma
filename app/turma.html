@@ -11,8 +11,10 @@
     <script src="js/core/session.js"></script>
     <script src="js/core/auth.js"></script>
     <script src="js/core/permissions.js"></script>
+    <script src="js/utils/dates.js"></script>
     <script src="js/services/turmas.service.js"></script>
     <script src="js/services/alunos.service.js"></script>
+    <script src="js/services/documentos.service.js"></script>
   </head>
   <body>
     <header class="app-header">
@@ -51,6 +53,37 @@
           <div id="alunosList" class="admin-list-container" style="max-height: none">
             <div class="admin-list-item" style="color: var(--text-muted)">A carregar alunos...</div>
           </div>
+        </div>
+
+        <div class="app-card">
+          <div class="app-card-title">
+            <span>Documentos da Turma</span>
+            <button id="toggleDocFormBtn" class="btn btn-secondary">+ Adicionar documento</button>
+          </div>
+
+          <div id="docForm" style="display: none; margin-bottom: 16px">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="docTitulo">Título</label>
+                <input type="text" id="docTitulo" class="form-control" placeholder="Ex: Ata do Conselho de Turma" />
+              </div>
+              <div class="form-group">
+                <label for="docCategoria">Categoria</label>
+                <input type="text" id="docCategoria" class="form-control" placeholder="Ex: Ata" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="docFicheiro">Ficheiro</label>
+              <input type="file" id="docFicheiro" class="form-control" />
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px">
+              <button id="guardarDocBtn" class="btn btn-primary">Carregar</button>
+              <button id="cancelarDocBtn" class="btn btn-secondary">Cancelar</button>
+            </div>
+            <div id="docMsg"></div>
+          </div>
+
+          <div id="docsList" class="admin-list-container" style="max-height: none"></div>
         </div>
       </div>
     </main>
@@ -110,6 +143,98 @@
           document.getElementById("searchAluno").addEventListener("input", (e) => {
             const q = e.target.value.trim().toLowerCase();
             renderAlunos(alunos.filter((a) => a.nome?.toLowerCase().includes(q)));
+          });
+
+          const docsListEl = document.getElementById("docsList");
+
+          function renderDocs(docs) {
+            docsListEl.innerHTML = docs.length
+              ? docs
+                  .map(
+                    (d) => `
+                    <div class="admin-list-item" data-id="${d.id}" data-path="${d.ficheiro_path}">
+                      <div>
+                        <strong>${d.titulo}</strong>
+                        <span style="color: var(--text-muted); font-size: 12px; display: block">
+                          ${[d.categoria, formatDate(d.criado_em)].filter(Boolean).join(" · ")}
+                        </span>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <button class="btn btn-secondary ver-doc-btn">Ver</button>
+                        <button class="icon-btn danger apagar-doc-btn" title="Apagar documento">✕</button>
+                      </div>
+                    </div>`,
+                  )
+                  .join("")
+              : '<div class="admin-list-item" style="color: var(--text-muted)">Sem documentos.</div>';
+          }
+
+          async function carregarDocs() {
+            const docs = await DocumentosService.getByTurma(turmaId);
+            renderDocs(docs);
+          }
+
+          await carregarDocs();
+
+          const docFormEl = document.getElementById("docForm");
+          const docMsgEl = document.getElementById("docMsg");
+
+          document.getElementById("toggleDocFormBtn").addEventListener("click", () => {
+            docFormEl.style.display = docFormEl.style.display === "none" ? "block" : "none";
+          });
+
+          document.getElementById("cancelarDocBtn").addEventListener("click", () => {
+            docFormEl.style.display = "none";
+          });
+
+          document.getElementById("guardarDocBtn").addEventListener("click", async () => {
+            const titulo = document.getElementById("docTitulo").value.trim();
+            const ficheiro = document.getElementById("docFicheiro").files[0];
+            if (!titulo || !ficheiro) {
+              docMsgEl.innerHTML = '<div class="alert alert-error">Título e ficheiro são obrigatórios.</div>';
+              return;
+            }
+            try {
+              const nomeFicheiro = ficheiro.name.replace(/\s+/g, "_");
+              const path = `turmas/${turmaId}/${Date.now()}-${nomeFicheiro}`;
+              await DocumentosService.upload(ficheiro, path);
+              await DocumentosService.create({
+                titulo,
+                categoria: document.getElementById("docCategoria").value.trim() || null,
+                ficheiro_path: path,
+                turma_id: turmaId,
+                criado_por: professor?.id || null,
+              });
+              document.getElementById("docTitulo").value = "";
+              document.getElementById("docCategoria").value = "";
+              document.getElementById("docFicheiro").value = "";
+              docMsgEl.innerHTML = "";
+              docFormEl.style.display = "none";
+              await carregarDocs();
+            } catch (err) {
+              console.error(err);
+              docMsgEl.innerHTML = '<div class="alert alert-error">Erro ao carregar documento.</div>';
+            }
+          });
+
+          docsListEl.addEventListener("click", async (event) => {
+            const item = event.target.closest(".admin-list-item[data-id]");
+            if (!item) return;
+            const { id, path } = item.dataset;
+
+            if (event.target.closest(".ver-doc-btn")) {
+              try {
+                const url = await DocumentosService.getSignedUrl(path);
+                window.open(url, "_blank");
+              } catch (err) {
+                console.error(err);
+                alert("Erro ao abrir documento.");
+              }
+            } else if (event.target.closest(".apagar-doc-btn")) {
+              if (!confirm("Apagar este documento?")) return;
+              await DocumentosService.delete(id, path);
+              await carregarDocs();
+            }
           });
 
           loadingEl.style.display = "none";

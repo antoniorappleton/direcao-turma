@@ -14,6 +14,9 @@
     <script src="js/utils/dates.js"></script>
     <script src="js/services/turmas.service.js"></script>
     <script src="js/services/alunos.service.js"></script>
+    <script src="js/services/registos.service.js"></script>
+    <script src="js/services/documentos.service.js"></script>
+    <script src="js/services/reunioes.service.js"></script>
   </head>
   <body>
     <header class="app-header">
@@ -37,9 +40,173 @@
           <a id="voltarTurmaLink" href="index.html" style="font-size: 13px; color: var(--text-muted); text-decoration: none">&larr; Voltar à turma</a>
           <h2 id="alunoNome" style="font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text-main); margin-top: 8px"></h2>
           <p id="alunoSubtitulo" style="color: var(--text-muted); font-size: 14px"></p>
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px">
+            <span id="alunoNumero" style="color: var(--text-muted); font-size: 13px"></span>
+            <button id="editarNumeroBtn" class="icon-btn" title="Editar número de aluno">✎</button>
+          </div>
+          <div id="numeroForm" style="display: none; align-items: center; gap: 8px; margin-top: 8px">
+            <input type="text" id="numeroInput" class="form-control" style="max-width: 120px" placeholder="Nº" />
+            <button id="guardarNumeroBtn" class="btn btn-primary">Guardar</button>
+            <button id="cancelarNumeroBtn" class="btn btn-secondary">Cancelar</button>
+          </div>
         </div>
 
         <div class="dashboard-grid">
+          <div>
+            <div class="app-card">
+              <div class="app-card-title">
+                <span>Registo / Acompanhamento</span>
+                <button id="toggleRegistoFormBtn" class="btn btn-secondary">+ Novo registo</button>
+              </div>
+
+              <div id="registoForm" style="display: none; margin-bottom: 16px">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="registoTipo">Tipo</label>
+                    <select id="registoTipo" class="form-control">
+                      <option value="nota">Nota</option>
+                      <option value="contacto_ee">Contacto com EE</option>
+                      <option value="reuniao">Reunião</option>
+                      <option value="outro">Outro</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="registoData">Data</label>
+                    <input type="date" id="registoData" class="form-control" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="registoResumo">Resumo</label>
+                  <textarea id="registoResumo" class="form-control" rows="3" placeholder="O que aconteceu / o que foi dito..."></textarea>
+                </div>
+                <div class="form-row">
+                  <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 20px">
+                    <input type="checkbox" id="registoSeguimento" style="width: auto" />
+                    <label for="registoSeguimento" style="margin: 0">Precisa de seguimento</label>
+                  </div>
+                  <div class="form-group">
+                    <label for="registoDataSeguimento">Data de seguimento</label>
+                    <input type="date" id="registoDataSeguimento" class="form-control" disabled />
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 8px">
+                  <button id="guardarRegistoBtn" class="btn btn-primary">Guardar</button>
+                  <button id="cancelarRegistoBtn" class="btn btn-secondary">Cancelar</button>
+                </div>
+                <div id="registoMsg"></div>
+              </div>
+
+              <div id="registosList" class="ocorrencias-list"></div>
+            </div>
+
+            <div class="app-card">
+              <div class="app-card-title">
+                <span>Documentos</span>
+                <button id="toggleDocFormBtn" class="btn btn-secondary">+ Adicionar documento</button>
+              </div>
+
+              <div id="docForm" style="display: none; margin-bottom: 16px">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="docTitulo">Título</label>
+                    <input type="text" id="docTitulo" class="form-control" placeholder="Ex: Autorização de saída" />
+                  </div>
+                  <div class="form-group">
+                    <label for="docCategoria">Categoria</label>
+                    <input type="text" id="docCategoria" class="form-control" placeholder="Ex: Autorização" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="docFicheiro">Ficheiro</label>
+                  <input type="file" id="docFicheiro" class="form-control" />
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 8px">
+                  <button id="guardarDocBtn" class="btn btn-primary">Carregar</button>
+                  <button id="cancelarDocBtn" class="btn btn-secondary">Cancelar</button>
+                </div>
+                <div id="docMsg"></div>
+              </div>
+
+              <div id="docsList" class="admin-list-container" style="max-height: none"></div>
+            </div>
+
+            <div class="app-card">
+              <div class="app-card-title">
+                <span>Reuniões com Encarregados de Educação</span>
+                <button id="toggleReuniaoFormBtn" class="btn btn-secondary">+ Pedir reunião</button>
+              </div>
+
+              <div id="reuniaoForm" style="display: none; margin-bottom: 16px">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="reuniaoDataPedida">Data do pedido</label>
+                    <input type="date" id="reuniaoDataPedida" class="form-control" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="reuniaoAssuntos">Assuntos a tratar</label>
+                  <textarea id="reuniaoAssuntos" class="form-control" rows="2"></textarea>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 8px">
+                  <button id="guardarReuniaoBtn" class="btn btn-primary">Guardar</button>
+                  <button id="cancelarReuniaoBtn" class="btn btn-secondary">Cancelar</button>
+                </div>
+                <div id="reuniaoMsg"></div>
+              </div>
+
+              <div id="reunioesList" class="ocorrencias-list"></div>
+
+              <div id="reuniaoAcaoForm" style="display: none; margin-top: 16px; border-top: 1px solid var(--surface-border); padding-top: 16px">
+                <div id="reuniaoAcaoTitulo" style="font-weight: 600; margin-bottom: 8px"></div>
+                <div class="form-row">
+                  <div class="form-group" id="reuniaoAcaoDataWrap">
+                    <label id="reuniaoAcaoDataLabel" for="reuniaoAcaoData">Data</label>
+                    <input type="date" id="reuniaoAcaoData" class="form-control" />
+                  </div>
+                  <div class="form-group" id="reuniaoAcaoHoraWrap">
+                    <label for="reuniaoAcaoHora">Hora</label>
+                    <input type="time" id="reuniaoAcaoHora" class="form-control" />
+                  </div>
+                </div>
+                <div class="form-group" id="reuniaoAcaoLocalWrap">
+                  <label for="reuniaoAcaoLocal">Local</label>
+                  <input type="text" id="reuniaoAcaoLocal" class="form-control" />
+                </div>
+                <div class="form-group" id="reuniaoAcaoTopicosWrap">
+                  <label>Tópicos abordados</label>
+                  <div style="display: flex; flex-direction: column; gap: 6px">
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal">
+                      <input type="checkbox" class="reuniao-topico-check" value="situacao_academica" style="width: auto" /> Situação académica
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal">
+                      <input type="checkbox" class="reuniao-topico-check" value="comportamento" style="width: auto" /> Comportamento
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal">
+                      <input type="checkbox" class="reuniao-topico-check" value="faltas_injustificadas" style="width: auto" /> Faltas injustificadas
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal">
+                      <input type="checkbox" class="reuniao-topico-check" value="exames_clinicos" style="width: auto" /> Exames clínicos (testes psicotécnicos)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal">
+                      <input type="checkbox" class="reuniao-topico-check" value="queixas" style="width: auto" /> Queixas em geral
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal">
+                      <input type="checkbox" class="reuniao-topico-check" value="outros" style="width: auto" /> Outros assuntos
+                    </label>
+                  </div>
+                </div>
+                <div class="form-group" id="reuniaoAcaoNotasWrap">
+                  <label for="reuniaoAcaoNotas">Notas</label>
+                  <textarea id="reuniaoAcaoNotas" class="form-control" rows="2"></textarea>
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button id="guardarReuniaoAcaoBtn" class="btn btn-primary">Guardar</button>
+                  <button id="cancelarReuniaoAcaoBtn" class="btn btn-secondary">Cancelar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="sidebar-section">
             <div class="app-card">
               <div class="app-card-title"><span>Encarregados de Educação</span></div>
@@ -89,12 +256,39 @@
           }
 
           document.getElementById("alunoNome").textContent = aluno.nome;
-          document.getElementById("alunoSubtitulo").textContent = [
-            aluno.numero_interno ? `Nº ${aluno.numero_interno}` : null,
-            turma ? `${turma.nome} (${turma.ano}º ano)` : null,
-          ]
-            .filter(Boolean)
-            .join(" · ");
+          document.getElementById("alunoSubtitulo").textContent = turma
+            ? `${turma.nome} (${turma.ano}º ano)`
+            : "";
+
+          let numeroAtual = aluno.numero_interno;
+          const alunoNumeroEl = document.getElementById("alunoNumero");
+          const numeroFormEl = document.getElementById("numeroForm");
+          const numeroInputEl = document.getElementById("numeroInput");
+
+          function renderNumero() {
+            alunoNumeroEl.textContent = numeroAtual ? `Nº ${numeroAtual}` : "Nº por preencher";
+          }
+          renderNumero();
+
+          document.getElementById("editarNumeroBtn").addEventListener("click", () => {
+            numeroInputEl.value = numeroAtual || "";
+            numeroFormEl.style.display = "flex";
+          });
+          document.getElementById("cancelarNumeroBtn").addEventListener("click", () => {
+            numeroFormEl.style.display = "none";
+          });
+          document.getElementById("guardarNumeroBtn").addEventListener("click", async () => {
+            const novoNumero = numeroInputEl.value.trim();
+            try {
+              await AlunosService.updateNumeroInterno(alunoId, novoNumero || null);
+              numeroAtual = novoNumero || null;
+              renderNumero();
+              numeroFormEl.style.display = "none";
+            } catch (err) {
+              console.error(err);
+              alert("Erro ao guardar número de aluno.");
+            }
+          });
 
           const voltarLink = document.getElementById("voltarTurmaLink");
           if (turma) {
@@ -142,6 +336,417 @@
                 )
                 .join("")
             : '<div class="admin-list-item" style="color: var(--text-muted)">Sem histórico de matrículas.</div>';
+
+          const TIPO_LABELS = {
+            nota: "Nota",
+            contacto_ee: "Contacto com EE",
+            reuniao: "Reunião",
+            outro: "Outro",
+          };
+
+          const registosListEl = document.getElementById("registosList");
+
+          function renderRegistos(registos) {
+            registosListEl.innerHTML = registos.length
+              ? registos
+                  .map(
+                    (r) => `
+                    <div class="ocorrencia-item" data-id="${r.id}">
+                      <div class="ocorrencia-header">
+                        <span class="ocorrencia-student">${TIPO_LABELS[r.tipo] || r.tipo}</span>
+                        <div class="ocorrencia-actions">
+                          ${
+                            r.seguimento_necessario && !r.seguimento_concluido
+                              ? `<span class="badge badge-pending">Seguimento: ${formatDate(r.data_seguimento)}</span>
+                                 <button class="icon-btn concluir-seguimento-btn" title="Marcar seguimento como concluído">✓</button>`
+                              : ""
+                          }
+                          <button class="icon-btn danger apagar-registo-btn" title="Apagar registo">✕</button>
+                        </div>
+                      </div>
+                      <div class="ocorrencia-meta">
+                        <span>${formatDate(r.data)}</span>
+                        <span>${r.professores?.nome || ""}</span>
+                      </div>
+                      <div class="ocorrencia-reason">${r.resumo}</div>
+                    </div>`,
+                  )
+                  .join("")
+              : '<div class="admin-list-item" style="color: var(--text-muted)">Sem registos ainda.</div>';
+          }
+
+          async function carregarRegistos() {
+            const registos = await RegistosService.getByAluno(alunoId);
+            renderRegistos(registos);
+          }
+
+          await carregarRegistos();
+
+          const registoFormEl = document.getElementById("registoForm");
+          const registoDataEl = document.getElementById("registoData");
+          const registoSeguimentoEl = document.getElementById("registoSeguimento");
+          const registoDataSeguimentoEl = document.getElementById("registoDataSeguimento");
+          const registoMsgEl = document.getElementById("registoMsg");
+
+          document.getElementById("toggleRegistoFormBtn").addEventListener("click", () => {
+            const aberto = registoFormEl.style.display !== "none";
+            if (aberto) {
+              registoFormEl.style.display = "none";
+            } else {
+              registoDataEl.value = todayIso();
+              registoFormEl.style.display = "block";
+            }
+          });
+
+          document.getElementById("cancelarRegistoBtn").addEventListener("click", () => {
+            registoFormEl.style.display = "none";
+          });
+
+          registoSeguimentoEl.addEventListener("change", () => {
+            registoDataSeguimentoEl.disabled = !registoSeguimentoEl.checked;
+            if (!registoSeguimentoEl.checked) registoDataSeguimentoEl.value = "";
+          });
+
+          document.getElementById("guardarRegistoBtn").addEventListener("click", async () => {
+            const resumo = document.getElementById("registoResumo").value.trim();
+            if (!resumo) {
+              registoMsgEl.innerHTML = '<div class="alert alert-error">O resumo é obrigatório.</div>';
+              return;
+            }
+            try {
+              await RegistosService.create({
+                aluno_id: alunoId,
+                autor_id: professor?.id || null,
+                tipo: document.getElementById("registoTipo").value,
+                data: registoDataEl.value || todayIso(),
+                resumo,
+                seguimento_necessario: registoSeguimentoEl.checked,
+                data_seguimento: registoSeguimentoEl.checked ? registoDataSeguimentoEl.value || null : null,
+              });
+              document.getElementById("registoResumo").value = "";
+              registoSeguimentoEl.checked = false;
+              registoDataSeguimentoEl.value = "";
+              registoDataSeguimentoEl.disabled = true;
+              registoMsgEl.innerHTML = "";
+              registoFormEl.style.display = "none";
+              await carregarRegistos();
+            } catch (err) {
+              console.error(err);
+              registoMsgEl.innerHTML = '<div class="alert alert-error">Erro ao guardar registo.</div>';
+            }
+          });
+
+          registosListEl.addEventListener("click", async (event) => {
+            const item = event.target.closest(".ocorrencia-item");
+            if (!item) return;
+            const id = item.dataset.id;
+
+            if (event.target.closest(".concluir-seguimento-btn")) {
+              await RegistosService.marcarSeguimentoConcluido(id);
+              await carregarRegistos();
+            } else if (event.target.closest(".apagar-registo-btn")) {
+              if (!confirm("Apagar este registo?")) return;
+              await RegistosService.delete(id);
+              await carregarRegistos();
+            }
+          });
+
+          const docsListEl = document.getElementById("docsList");
+
+          function renderDocs(docs) {
+            docsListEl.innerHTML = docs.length
+              ? docs
+                  .map(
+                    (d) => `
+                    <div class="admin-list-item" data-id="${d.id}" data-path="${d.ficheiro_path}">
+                      <div>
+                        <strong>${d.titulo}</strong>
+                        <span style="color: var(--text-muted); font-size: 12px; display: block">
+                          ${[d.categoria, formatDate(d.criado_em)].filter(Boolean).join(" · ")}
+                        </span>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <button class="btn btn-secondary ver-doc-btn">Ver</button>
+                        <button class="icon-btn danger apagar-doc-btn" title="Apagar documento">✕</button>
+                      </div>
+                    </div>`,
+                  )
+                  .join("")
+              : '<div class="admin-list-item" style="color: var(--text-muted)">Sem documentos.</div>';
+          }
+
+          async function carregarDocs() {
+            const docs = await DocumentosService.getByAluno(alunoId);
+            renderDocs(docs);
+          }
+
+          await carregarDocs();
+
+          const docFormEl = document.getElementById("docForm");
+          const docMsgEl = document.getElementById("docMsg");
+
+          document.getElementById("toggleDocFormBtn").addEventListener("click", () => {
+            docFormEl.style.display = docFormEl.style.display === "none" ? "block" : "none";
+          });
+
+          document.getElementById("cancelarDocBtn").addEventListener("click", () => {
+            docFormEl.style.display = "none";
+          });
+
+          document.getElementById("guardarDocBtn").addEventListener("click", async () => {
+            const titulo = document.getElementById("docTitulo").value.trim();
+            const ficheiro = document.getElementById("docFicheiro").files[0];
+            if (!titulo || !ficheiro) {
+              docMsgEl.innerHTML = '<div class="alert alert-error">Título e ficheiro são obrigatórios.</div>';
+              return;
+            }
+            try {
+              const nomeFicheiro = ficheiro.name.replace(/\s+/g, "_");
+              const path = `alunos/${alunoId}/${Date.now()}-${nomeFicheiro}`;
+              await DocumentosService.upload(ficheiro, path);
+              await DocumentosService.create({
+                titulo,
+                categoria: document.getElementById("docCategoria").value.trim() || null,
+                ficheiro_path: path,
+                aluno_id: alunoId,
+                criado_por: professor?.id || null,
+              });
+              document.getElementById("docTitulo").value = "";
+              document.getElementById("docCategoria").value = "";
+              document.getElementById("docFicheiro").value = "";
+              docMsgEl.innerHTML = "";
+              docFormEl.style.display = "none";
+              await carregarDocs();
+            } catch (err) {
+              console.error(err);
+              docMsgEl.innerHTML = '<div class="alert alert-error">Erro ao carregar documento.</div>';
+            }
+          });
+
+          docsListEl.addEventListener("click", async (event) => {
+            const item = event.target.closest(".admin-list-item[data-id]");
+            if (!item) return;
+            const { id, path } = item.dataset;
+
+            if (event.target.closest(".ver-doc-btn")) {
+              try {
+                const url = await DocumentosService.getSignedUrl(path);
+                window.open(url, "_blank");
+              } catch (err) {
+                console.error(err);
+                alert("Erro ao abrir documento.");
+              }
+            } else if (event.target.closest(".apagar-doc-btn")) {
+              if (!confirm("Apagar este documento?")) return;
+              await DocumentosService.delete(id, path);
+              await carregarDocs();
+            }
+          });
+
+          const ESTADO_LABELS = {
+            pedida: "Pedida",
+            agendada: "Agendada",
+            confirmada: "Confirmada",
+            realizada: "Realizada",
+            cancelada: "Cancelada",
+          };
+          const ESTADO_BADGE = {
+            pedida: "badge-pending",
+            agendada: "badge-pending",
+            confirmada: "badge-synced",
+            realizada: "badge-synced",
+            cancelada: "badge-pending",
+          };
+          const TOPICO_LABELS = {
+            situacao_academica: "Situação académica",
+            comportamento: "Comportamento",
+            faltas_injustificadas: "Faltas injustificadas",
+            exames_clinicos: "Exames clínicos",
+            queixas: "Queixas em geral",
+            outros: "Outros assuntos",
+          };
+
+          const reunioesListEl = document.getElementById("reunioesList");
+
+          function renderReunioes(reunioes) {
+            reunioesListEl.innerHTML = reunioes.length
+              ? reunioes
+                  .map((r) => {
+                    // Linha temporal: pedido → agendamento → confirmação → realização.
+                    const linha = [
+                      `Pedida ${formatDate(r.data_pedida)}`,
+                      r.data_agendada ? `Agendada ${formatDate(r.data_agendada)}${r.hora ? ` às ${r.hora.slice(0, 5)}` : ""}` : null,
+                      r.data_confirmada ? `Confirmada ${formatDate(r.data_confirmada)}` : null,
+                      r.data_realizada ? `Realizada ${formatDate(r.data_realizada)}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" → ");
+
+                    const acoes = [];
+                    if (r.estado === "pedida") acoes.push('<button class="btn btn-secondary agendar-reuniao-btn">Agendar</button>');
+                    if (r.estado === "agendada") acoes.push('<button class="btn btn-secondary confirmar-reuniao-btn">Confirmar</button>');
+                    if (r.estado === "agendada" || r.estado === "confirmada")
+                      acoes.push('<button class="btn btn-secondary realizar-reuniao-btn">Registar notas</button>');
+                    if (r.estado === "pedida" || r.estado === "agendada" || r.estado === "confirmada")
+                      acoes.push('<button class="btn btn-secondary cancelar-reuniao-btn">Cancelar</button>');
+
+                    const topicosBadges = (r.topicos || [])
+                      .map((t) => `<span class="badge badge-synced">${TOPICO_LABELS[t] || t}</span>`)
+                      .join(" ");
+
+                    return `
+                    <div class="ocorrencia-item" data-id="${r.id}">
+                      <div class="ocorrencia-header">
+                        <span class="badge ${ESTADO_BADGE[r.estado] || "badge-pending"}">${ESTADO_LABELS[r.estado] || r.estado}</span>
+                        <div class="ocorrencia-actions">
+                          ${acoes.join("")}
+                          <button class="icon-btn danger apagar-reuniao-btn" title="Apagar reunião">✕</button>
+                        </div>
+                      </div>
+                      <div class="ocorrencia-meta">
+                        <span>${linha}</span>
+                        ${r.local ? `<span>${r.local}</span>` : ""}
+                      </div>
+                      ${r.assuntos ? `<div class="ocorrencia-reason">${r.assuntos}</div>` : ""}
+                      ${topicosBadges ? `<div style="display: flex; gap: 6px; flex-wrap: wrap">${topicosBadges}</div>` : ""}
+                      ${r.notas ? `<div class="ocorrencia-reason">${r.notas}</div>` : ""}
+                    </div>`;
+                  })
+                  .join("")
+              : '<div class="admin-list-item" style="color: var(--text-muted)">Sem reuniões registadas.</div>';
+          }
+
+          let reunioesAtuais = [];
+          async function carregarReunioes() {
+            reunioesAtuais = await ReunioesService.getByAluno(alunoId);
+            renderReunioes(reunioesAtuais);
+          }
+
+          await carregarReunioes();
+
+          const reuniaoFormEl = document.getElementById("reuniaoForm");
+          const reuniaoMsgEl = document.getElementById("reuniaoMsg");
+
+          document.getElementById("toggleReuniaoFormBtn").addEventListener("click", () => {
+            if (reuniaoFormEl.style.display === "none") {
+              document.getElementById("reuniaoDataPedida").value = todayIso();
+              reuniaoFormEl.style.display = "block";
+            } else {
+              reuniaoFormEl.style.display = "none";
+            }
+          });
+          document.getElementById("cancelarReuniaoBtn").addEventListener("click", () => {
+            reuniaoFormEl.style.display = "none";
+          });
+          document.getElementById("guardarReuniaoBtn").addEventListener("click", async () => {
+            try {
+              await ReunioesService.create({
+                aluno_id: alunoId,
+                data_pedida: document.getElementById("reuniaoDataPedida").value || todayIso(),
+                assuntos: document.getElementById("reuniaoAssuntos").value.trim() || null,
+                criado_por: professor?.id || null,
+              });
+              document.getElementById("reuniaoAssuntos").value = "";
+              reuniaoMsgEl.innerHTML = "";
+              reuniaoFormEl.style.display = "none";
+              await carregarReunioes();
+            } catch (err) {
+              console.error(err);
+              reuniaoMsgEl.innerHTML = '<div class="alert alert-error">Erro ao guardar reunião.</div>';
+            }
+          });
+
+          // Formulário partilhado para as ações "Agendar" / "Marcar realizada"
+          // (evita gerar um form por cada item da lista).
+          let acaoReuniaoId = null;
+          let acaoTipo = null;
+          const reuniaoAcaoFormEl = document.getElementById("reuniaoAcaoForm");
+          const reuniaoAcaoDataEl = document.getElementById("reuniaoAcaoData");
+          const reuniaoAcaoHoraEl = document.getElementById("reuniaoAcaoHora");
+          const reuniaoAcaoLocalEl = document.getElementById("reuniaoAcaoLocal");
+          const reuniaoAcaoNotasEl = document.getElementById("reuniaoAcaoNotas");
+
+          function abrirAcaoForm(tipo, reuniao) {
+            acaoReuniaoId = reuniao.id;
+            acaoTipo = tipo;
+            const agendar = tipo === "agendar";
+            document.getElementById("reuniaoAcaoTitulo").textContent = agendar ? "Agendar reunião" : "Registar notas da reunião";
+            document.getElementById("reuniaoAcaoDataLabel").textContent = agendar ? "Data agendada" : "Data realizada";
+            document.getElementById("reuniaoAcaoHoraWrap").style.display = agendar ? "block" : "none";
+            document.getElementById("reuniaoAcaoLocalWrap").style.display = agendar ? "block" : "none";
+            document.getElementById("reuniaoAcaoTopicosWrap").style.display = agendar ? "none" : "block";
+            document.getElementById("reuniaoAcaoNotasWrap").style.display = agendar ? "none" : "block";
+            reuniaoAcaoDataEl.value = (agendar ? reuniao.data_agendada : reuniao.data_realizada) || todayIso();
+            reuniaoAcaoHoraEl.value = reuniao.hora || "";
+            reuniaoAcaoLocalEl.value = reuniao.local || "";
+            reuniaoAcaoNotasEl.value = reuniao.notas || "";
+            const topicosAtuais = reuniao.topicos || [];
+            document.querySelectorAll(".reuniao-topico-check").forEach((cb) => {
+              cb.checked = topicosAtuais.includes(cb.value);
+            });
+            reuniaoAcaoFormEl.style.display = "block";
+            reuniaoAcaoFormEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+
+          document.getElementById("cancelarReuniaoAcaoBtn").addEventListener("click", () => {
+            reuniaoAcaoFormEl.style.display = "none";
+            acaoReuniaoId = null;
+          });
+
+          document.getElementById("guardarReuniaoAcaoBtn").addEventListener("click", async () => {
+            if (!acaoReuniaoId) return;
+            try {
+              if (acaoTipo === "agendar") {
+                await ReunioesService.update(acaoReuniaoId, {
+                  estado: "agendada",
+                  data_agendada: reuniaoAcaoDataEl.value || null,
+                  hora: reuniaoAcaoHoraEl.value || null,
+                  local: reuniaoAcaoLocalEl.value.trim() || null,
+                });
+              } else {
+                const topicosSelecionados = Array.from(document.querySelectorAll(".reuniao-topico-check"))
+                  .filter((cb) => cb.checked)
+                  .map((cb) => cb.value);
+                await ReunioesService.update(acaoReuniaoId, {
+                  estado: "realizada",
+                  data_realizada: reuniaoAcaoDataEl.value || todayIso(),
+                  topicos: topicosSelecionados,
+                  notas: reuniaoAcaoNotasEl.value.trim() || null,
+                });
+              }
+              reuniaoAcaoFormEl.style.display = "none";
+              acaoReuniaoId = null;
+              await carregarReunioes();
+            } catch (err) {
+              console.error(err);
+              alert("Erro ao guardar reunião.");
+            }
+          });
+
+          reunioesListEl.addEventListener("click", async (event) => {
+            const item = event.target.closest(".ocorrencia-item");
+            if (!item) return;
+            const id = item.dataset.id;
+            const reuniao = reunioesAtuais.find((r) => r.id === id);
+            if (!reuniao) return;
+
+            if (event.target.closest(".agendar-reuniao-btn")) {
+              abrirAcaoForm("agendar", reuniao);
+            } else if (event.target.closest(".confirmar-reuniao-btn")) {
+              await ReunioesService.update(id, { estado: "confirmada", data_confirmada: todayIso() });
+              await carregarReunioes();
+            } else if (event.target.closest(".realizar-reuniao-btn")) {
+              abrirAcaoForm("realizar", reuniao);
+            } else if (event.target.closest(".cancelar-reuniao-btn")) {
+              if (!confirm("Cancelar esta reunião?")) return;
+              await ReunioesService.update(id, { estado: "cancelada" });
+              await carregarReunioes();
+            } else if (event.target.closest(".apagar-reuniao-btn")) {
+              if (!confirm("Apagar esta reunião?")) return;
+              await ReunioesService.delete(id);
+              await carregarReunioes();
+            }
+          });
 
           loadingEl.style.display = "none";
           document.getElementById("alunoContent").style.display = "block";

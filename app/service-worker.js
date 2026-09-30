@@ -1,4 +1,4 @@
-const CACHE_NAME = "direcao-turma-v1";
+const CACHE_NAME = "direcao-turma-v5";
 const PRECACHE = [
   "./",
   "index.html",
@@ -11,6 +11,9 @@ const PRECACHE = [
   "js/services/turmas.service.js",
   "js/services/alunos.service.js",
   "js/services/encarregados.service.js",
+  "js/services/registos.service.js",
+  "js/services/documentos.service.js",
+  "js/services/reunioes.service.js",
   "js/utils/dates.js",
   "manifest.json",
   "assets/logo.png",
