@@ -947,7 +947,7 @@ textarea.form-control {
 /* Calendário do dashboard */
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
 }
 
@@ -960,6 +960,7 @@ textarea.form-control {
 }
 
 .calendar-day {
+  min-width: 0;
   min-height: 64px;
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm);
@@ -991,6 +992,9 @@ textarea.form-control {
 }
 
 .calendar-event-dot {
+  display: block;
+  max-width: 100%;
+  box-sizing: border-box;
   font-size: 10px;
   padding: 1px 4px;
   border-radius: 4px;
@@ -1368,16 +1372,54 @@ body.dt-workspace main.app-container {
   background: var(--primary-light);
 }
 
-.dt-selected-day:empty {
+.dt-calendar-modal-overlay {
   display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.45);
 }
 
-.dt-selected-day:not(:empty) {
-  padding-top: 14px;
+.dt-calendar-modal-overlay.aberto {
+  display: flex;
 }
 
-.dt-selected-day .admin-list-container {
-  max-height: 180px;
+.dt-calendar-modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: min(70vh, 520px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
+
+.dt-calendar-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.dt-calendar-modal-header strong {
+  font-size: 15px;
+}
+
+.dt-calendar-modal-body {
+  padding: 12px 16px 16px;
+  overflow-y: auto;
+}
+
+.dt-calendar-modal-body .admin-list-container {
+  max-height: none;
 }
 
 .dt-breadcrumb {
