@@ -204,6 +204,85 @@
                   <button id="cancelarReuniaoAcaoBtn" class="btn btn-secondary">Cancelar</button>
                 </div>
               </div>
+
+              <div id="reuniaoEditForm" style="display: none; margin-top: 16px; border-top: 1px solid var(--surface-border); padding-top: 16px">
+                <div style="font-weight: 600; margin-bottom: 8px">Editar reunião</div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="reuniaoEditEstado">Estado</label>
+                    <select id="reuniaoEditEstado" class="form-control">
+                      <option value="pedida">Pedida</option>
+                      <option value="agendada">Agendada</option>
+                      <option value="confirmada">Confirmada</option>
+                      <option value="realizada">Realizada</option>
+                      <option value="cancelada">Cancelada</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="reuniaoEditDataPedida">Data do pedido</label>
+                    <input type="date" id="reuniaoEditDataPedida" class="form-control" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="reuniaoEditDataAgendada">Data agendada</label>
+                    <input type="date" id="reuniaoEditDataAgendada" class="form-control" />
+                  </div>
+                  <div class="form-group">
+                    <label for="reuniaoEditHora">Hora</label>
+                    <input type="time" id="reuniaoEditHora" class="form-control" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="reuniaoEditLocal">Local</label>
+                  <input type="text" id="reuniaoEditLocal" class="form-control" />
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="reuniaoEditDataConfirmada">Data confirmada</label>
+                    <input type="date" id="reuniaoEditDataConfirmada" class="form-control" />
+                  </div>
+                  <div class="form-group">
+                    <label for="reuniaoEditDataRealizada">Data realizada</label>
+                    <input type="date" id="reuniaoEditDataRealizada" class="form-control" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="reuniaoEditAssuntos">Assuntos a tratar</label>
+                  <textarea id="reuniaoEditAssuntos" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                  <label>Tópicos abordados</label>
+                  <div style="display: flex; flex-direction: column; gap: 6px">
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal">
+                      <input type="checkbox" class="reuniao-edit-topico-check" value="situacao_academica" style="width: auto" /> Situação académica
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal">
+                      <input type="checkbox" class="reuniao-edit-topico-check" value="comportamento" style="width: auto" /> Comportamento
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal">
+                      <input type="checkbox" class="reuniao-edit-topico-check" value="faltas_injustificadas" style="width: auto" /> Faltas injustificadas
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal">
+                      <input type="checkbox" class="reuniao-edit-topico-check" value="exames_clinicos" style="width: auto" /> Exames clínicos (testes psicotécnicos)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal">
+                      <input type="checkbox" class="reuniao-edit-topico-check" value="queixas" style="width: auto" /> Queixas em geral
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal">
+                      <input type="checkbox" class="reuniao-edit-topico-check" value="outros" style="width: auto" /> Outros assuntos
+                    </label>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="reuniaoEditNotas">Notas</label>
+                  <textarea id="reuniaoEditNotas" class="form-control" rows="2"></textarea>
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button id="guardarReuniaoEditBtn" class="btn btn-primary">Guardar</button>
+                  <button id="cancelarReuniaoEditBtn" class="btn btn-secondary">Cancelar</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -600,6 +679,7 @@
                         <span class="badge ${ESTADO_BADGE[r.estado] || "badge-pending"}">${ESTADO_LABELS[r.estado] || r.estado}</span>
                         <div class="ocorrencia-actions">
                           ${acoes.join("")}
+                          <button class="icon-btn editar-reuniao-btn" title="Editar reunião">✎</button>
                           <button class="icon-btn danger apagar-reuniao-btn" title="Apagar reunião">✕</button>
                         </div>
                       </div>
@@ -684,6 +764,7 @@
             document.querySelectorAll(".reuniao-topico-check").forEach((cb) => {
               cb.checked = topicosAtuais.includes(cb.value);
             });
+            document.getElementById("reuniaoEditForm").style.display = "none";
             reuniaoAcaoFormEl.style.display = "block";
             reuniaoAcaoFormEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
           }
@@ -691,6 +772,63 @@
           document.getElementById("cancelarReuniaoAcaoBtn").addEventListener("click", () => {
             reuniaoAcaoFormEl.style.display = "none";
             acaoReuniaoId = null;
+          });
+
+          // Formulário de edição livre — corrige qualquer campo (incl.
+          // estado diretamente), sem passar pelos botões de fluxo rápido.
+          let editReuniaoId = null;
+          const reuniaoEditFormEl = document.getElementById("reuniaoEditForm");
+
+          function abrirEditForm(reuniao) {
+            editReuniaoId = reuniao.id;
+            document.getElementById("reuniaoEditEstado").value = reuniao.estado;
+            document.getElementById("reuniaoEditDataPedida").value = reuniao.data_pedida || "";
+            document.getElementById("reuniaoEditDataAgendada").value = reuniao.data_agendada || "";
+            document.getElementById("reuniaoEditHora").value = reuniao.hora || "";
+            document.getElementById("reuniaoEditLocal").value = reuniao.local || "";
+            document.getElementById("reuniaoEditDataConfirmada").value = reuniao.data_confirmada || "";
+            document.getElementById("reuniaoEditDataRealizada").value = reuniao.data_realizada || "";
+            document.getElementById("reuniaoEditAssuntos").value = reuniao.assuntos || "";
+            document.getElementById("reuniaoEditNotas").value = reuniao.notas || "";
+            const topicosAtuais = reuniao.topicos || [];
+            document.querySelectorAll(".reuniao-edit-topico-check").forEach((cb) => {
+              cb.checked = topicosAtuais.includes(cb.value);
+            });
+            reuniaoAcaoFormEl.style.display = "none";
+            reuniaoEditFormEl.style.display = "block";
+            reuniaoEditFormEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+
+          document.getElementById("cancelarReuniaoEditBtn").addEventListener("click", () => {
+            reuniaoEditFormEl.style.display = "none";
+            editReuniaoId = null;
+          });
+
+          document.getElementById("guardarReuniaoEditBtn").addEventListener("click", async () => {
+            if (!editReuniaoId) return;
+            const topicosSelecionados = Array.from(document.querySelectorAll(".reuniao-edit-topico-check"))
+              .filter((cb) => cb.checked)
+              .map((cb) => cb.value);
+            try {
+              await ReunioesService.update(editReuniaoId, {
+                estado: document.getElementById("reuniaoEditEstado").value,
+                data_pedida: document.getElementById("reuniaoEditDataPedida").value || null,
+                data_agendada: document.getElementById("reuniaoEditDataAgendada").value || null,
+                hora: document.getElementById("reuniaoEditHora").value || null,
+                local: document.getElementById("reuniaoEditLocal").value.trim() || null,
+                data_confirmada: document.getElementById("reuniaoEditDataConfirmada").value || null,
+                data_realizada: document.getElementById("reuniaoEditDataRealizada").value || null,
+                assuntos: document.getElementById("reuniaoEditAssuntos").value.trim() || null,
+                topicos: topicosSelecionados,
+                notas: document.getElementById("reuniaoEditNotas").value.trim() || null,
+              });
+              reuniaoEditFormEl.style.display = "none";
+              editReuniaoId = null;
+              await carregarReunioes();
+            } catch (err) {
+              console.error(err);
+              alert("Erro ao guardar edição da reunião.");
+            }
           });
 
           document.getElementById("guardarReuniaoAcaoBtn").addEventListener("click", async () => {
@@ -741,6 +879,8 @@
               if (!confirm("Cancelar esta reunião?")) return;
               await ReunioesService.update(id, { estado: "cancelada" });
               await carregarReunioes();
+            } else if (event.target.closest(".editar-reuniao-btn")) {
+              abrirEditForm(reuniao);
             } else if (event.target.closest(".apagar-reuniao-btn")) {
               if (!confirm("Apagar esta reunião?")) return;
               await ReunioesService.delete(id);
