@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.1" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.2" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -92,13 +92,22 @@
           </div>
           <div class="calendar-grid" id="calendarHeader"></div>
           <div class="calendar-grid" id="calendarGrid"></div>
-          <div id="calendarDiaSelecionado" class="dt-selected-day"></div>
         </section>
       </div>
     </main>
 
+    <div id="calendarDiaOverlay" class="dt-calendar-modal-overlay">
+      <div class="dt-calendar-modal" role="dialog" aria-modal="true" aria-labelledby="calendarDiaTitulo">
+        <div class="dt-calendar-modal-header">
+          <strong id="calendarDiaTitulo"></strong>
+          <button id="calendarDiaFecharBtn" class="icon-btn" title="Fechar" aria-label="Fechar">✕</button>
+        </div>
+        <div id="calendarDiaSelecionado" class="dt-calendar-modal-body"></div>
+      </div>
+    </div>
+
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.1
+      made by antonio.appleton | Departamento de Programação · v1.1.2
     </footer>
 
     <script>
@@ -249,6 +258,8 @@
           const calendarGridEl = document.getElementById("calendarGrid");
           const calMesAnoEl = document.getElementById("calMesAno");
           const calendarDiaEl = document.getElementById("calendarDiaSelecionado");
+          const calendarDiaOverlayEl = document.getElementById("calendarDiaOverlay");
+          const calendarDiaTituloEl = document.getElementById("calendarDiaTitulo");
 
           function pad(n) {
             return String(n).padStart(2, "0");
@@ -302,15 +313,12 @@
           };
 
           function renderDiaSelecionado() {
-            if (!diaSelecionado) {
-              calendarDiaEl.innerHTML = "";
-              return;
-            }
+            if (!diaSelecionado) return;
             const eventos = eventosPorDia[diaSelecionado] || [];
             const [ano, mes, dia] = diaSelecionado.split("-");
+            calendarDiaTituloEl.textContent = `${dia}/${mes}/${ano}`;
             calendarDiaEl.innerHTML = `
-              <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px">${dia}/${mes}/${ano}</div>
-              <div class="admin-list-container" style="max-height: none">
+              <div class="admin-list-container">
                 ${
                   eventos.length
                     ? eventos
@@ -327,12 +335,30 @@
               </div>`;
           }
 
+          function abrirDiaOverlay() {
+            calendarDiaOverlayEl.classList.add("aberto");
+          }
+          function fecharDiaOverlay() {
+            calendarDiaOverlayEl.classList.remove("aberto");
+            diaSelecionado = null;
+            renderCalendario();
+          }
+
           calendarGridEl.addEventListener("click", (event) => {
             const cell = event.target.closest(".calendar-day");
             if (!cell) return;
             diaSelecionado = cell.dataset.data;
             renderCalendario();
             renderDiaSelecionado();
+            abrirDiaOverlay();
+          });
+
+          document.getElementById("calendarDiaFecharBtn").addEventListener("click", fecharDiaOverlay);
+          calendarDiaOverlayEl.addEventListener("click", (event) => {
+            if (event.target === calendarDiaOverlayEl) fecharDiaOverlay();
+          });
+          document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && calendarDiaOverlayEl.classList.contains("aberto")) fecharDiaOverlay();
           });
 
           document.getElementById("calPrevBtn").addEventListener("click", () => {
