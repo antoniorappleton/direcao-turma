@@ -12,16 +12,16 @@ const ReunioesService = {
     return data || [];
   },
 
-  // Para o calendário do dashboard: reuniões já com data marcada, de todos
-  // os alunos das turmas do DT.
-  async getAgendadasByAlunos(alunoIds) {
+  // Para o calendário do dashboard: todas as reuniões (menos as canceladas)
+  // de todos os alunos das turmas do DT — o calendário decide, por reunião,
+  // qual a data mais atual a mostrar (pedida/agendada/realizada).
+  async getByAlunos(alunoIds) {
     if (!alunoIds.length) return [];
     const { data, error } = await window.supabase
       .from("reunioes_aluno")
       .select("*, alunos(nome)")
       .in("aluno_id", alunoIds)
-      .in("estado", ["agendada", "confirmada"])
-      .not("data_agendada", "is", null);
+      .neq("estado", "cancelada");
     if (error) throw error;
     return data || [];
   },

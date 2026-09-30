@@ -998,9 +998,17 @@ textarea.form-control {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.calendar-event-dot.reuniao {
+.calendar-event-dot.reuniao-pedida {
+  background: var(--surface-border);
+  color: var(--text-muted);
+}
+.calendar-event-dot.reuniao-agendada {
   background: var(--primary-light);
   color: var(--primary);
+}
+.calendar-event-dot.reuniao-realizada {
+  background: var(--success-light);
+  color: var(--success);
 }
 .calendar-event-dot.seguimento {
   background: var(--warning-light);
