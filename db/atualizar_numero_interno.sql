@@ -13,6 +13,10 @@
 
 BEGIN;
 
+-- A coluna nunca existiu em `alunos` (confirmado via erro 42703 em produção)
+-- — só por isso é que a ficha do aluno sempre mostrou "Nº por preencher".
+ALTER TABLE alunos ADD COLUMN IF NOT EXISTS numero_interno text;
+
 CREATE OR REPLACE FUNCTION public.current_user_email()
   RETURNS text
   LANGUAGE sql
