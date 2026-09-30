@@ -121,7 +121,7 @@
           const alunoIdsCalendario = alunosCalendario.map((a) => a.id);
 
           const [reunioesCalendario, seguimentosCalendario] = await Promise.all([
-            ReunioesService.getAgendadasByAlunos(alunoIdsCalendario),
+            ReunioesService.getByAlunos(alunoIdsCalendario),
             RegistosService.getSeguimentosPendentesByAlunos(alunoIdsCalendario),
           ]);
 
@@ -132,12 +132,29 @@
             if (!eventosPorDia[dia]) eventosPorDia[dia] = [];
             eventosPorDia[dia].push(evento);
           }
+          // Por reunião, mostrar só a data mais atual do seu estado (evita
+          // o mesmo encontro aparecer duplicado em vários dias).
           reunioesCalendario.forEach((r) => {
-            adicionarEvento(r.data_agendada, {
-              tipo: "reuniao",
-              label: `Reunião — ${r.alunos?.nome || ""}`,
-              alunoId: r.aluno_id,
-            });
+            const nome = r.alunos?.nome || "";
+            if (r.estado === "realizada" && r.data_realizada) {
+              adicionarEvento(r.data_realizada, {
+                tipo: "reuniao-realizada",
+                label: `Reunião realizada — ${nome}`,
+                alunoId: r.aluno_id,
+              });
+            } else if (r.data_agendada) {
+              adicionarEvento(r.data_agendada, {
+                tipo: "reuniao-agendada",
+                label: `Reunião — ${nome}`,
+                alunoId: r.aluno_id,
+              });
+            } else {
+              adicionarEvento(r.data_pedida, {
+                tipo: "reuniao-pedida",
+                label: `Reunião pedida — ${nome}`,
+                alunoId: r.aluno_id,
+              });
+            }
           });
           seguimentosCalendario.forEach((s) => {
             adicionarEvento(s.data_seguimento, {
@@ -210,6 +227,13 @@
             calendarGridEl.innerHTML = celulas;
           }
 
+          const TIPO_EVENTO_LABELS = {
+            "reuniao-pedida": "Pedida",
+            "reuniao-agendada": "Reunião",
+            "reuniao-realizada": "Realizada",
+            seguimento: "Seguimento",
+          };
+
           function renderDiaSelecionado() {
             if (!diaSelecionado) {
               calendarDiaEl.innerHTML = "";
@@ -226,7 +250,7 @@
                         .map(
                           (e) => `
                         <a href="aluno.html?id=${e.alunoId}" class="admin-list-item" style="text-decoration: none; color: inherit">
-                          <span class="calendar-event-dot ${e.tipo}">${e.tipo === "reuniao" ? "Reunião" : "Seguimento"}</span>
+                          <span class="calendar-event-dot ${e.tipo}">${TIPO_EVENTO_LABELS[e.tipo] || e.tipo}</span>
                           <span>${e.label}</span>
                         </a>`,
                         )
