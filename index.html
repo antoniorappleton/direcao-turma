@@ -11,7 +11,11 @@
     <script src="js/core/session.js"></script>
     <script src="js/core/auth.js"></script>
     <script src="js/core/permissions.js"></script>
+    <script src="js/utils/dates.js"></script>
     <script src="js/services/turmas.service.js"></script>
+    <script src="js/services/alunos.service.js"></script>
+    <script src="js/services/registos.service.js"></script>
+    <script src="js/services/reunioes.service.js"></script>
   </head>
   <body>
     <header class="app-header">
@@ -37,6 +41,20 @@
           <p style="color: var(--text-muted); font-size: 14px" id="welcomeMsg"></p>
         </div>
         <button id="toggleTurmasBtn" class="btn btn-secondary" style="display: none"></button>
+      </div>
+
+      <div class="app-card" style="margin-bottom: 24px">
+        <div class="app-card-title">
+          <span>Calendário</span>
+          <div style="display: flex; align-items: center; gap: 8px">
+            <button id="calPrevBtn" class="icon-btn" title="Mês anterior">‹</button>
+            <span id="calMesAno" style="font-weight: 600; min-width: 140px; text-align: center"></span>
+            <button id="calNextBtn" class="icon-btn" title="Mês seguinte">›</button>
+          </div>
+        </div>
+        <div class="calendar-grid" id="calendarHeader"></div>
+        <div class="calendar-grid" id="calendarGrid" style="margin-top: 4px"></div>
+        <div id="calendarDiaSelecionado" style="margin-top: 16px"></div>
       </div>
 
       <div id="turmasList" class="admin-list-container">
@@ -92,6 +110,163 @@
 
           let aMostrarTodas = false;
           render(minhasTurmas);
+
+          // Calendário: reuniões agendadas/confirmadas + seguimentos
+          // pendentes, de todos os alunos das turmas de que sou DT.
+          // Try/catch próprio: um erro aqui não deve impedir a lista de
+          // turmas (já renderizada) de continuar visível.
+          try {
+          const turmaIdsCalendario = minhasTurmas.map((t) => t.id);
+          const alunosCalendario = await AlunosService.getByTurmas(turmaIdsCalendario);
+          const alunoIdsCalendario = alunosCalendario.map((a) => a.id);
+
+          const [reunioesCalendario, seguimentosCalendario] = await Promise.all([
+            ReunioesService.getAgendadasByAlunos(alunoIdsCalendario),
+            RegistosService.getSeguimentosPendentesByAlunos(alunoIdsCalendario),
+          ]);
+
+          const eventosPorDia = {};
+          function adicionarEvento(dataIso, evento) {
+            if (!dataIso) return;
+            const dia = dataIso.slice(0, 10);
+            if (!eventosPorDia[dia]) eventosPorDia[dia] = [];
+            eventosPorDia[dia].push(evento);
+          }
+          reunioesCalendario.forEach((r) => {
+            adicionarEvento(r.data_agendada, {
+              tipo: "reuniao",
+              label: `Reunião — ${r.alunos?.nome || ""}`,
+              alunoId: r.aluno_id,
+            });
+          });
+          seguimentosCalendario.forEach((s) => {
+            adicionarEvento(s.data_seguimento, {
+              tipo: "seguimento",
+              label: `Seguimento — ${s.alunos?.nome || ""}`,
+              alunoId: s.aluno_id,
+            });
+          });
+
+          const DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+          const MESES = [
+            "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+          ];
+
+          document.getElementById("calendarHeader").innerHTML = DIAS_SEMANA
+            .map((d) => `<div class="calendar-day-header">${d}</div>`)
+            .join("");
+
+          const hoje = new Date();
+          let calAno = hoje.getFullYear();
+          let calMes = hoje.getMonth();
+          let diaSelecionado = null;
+
+          const calendarGridEl = document.getElementById("calendarGrid");
+          const calMesAnoEl = document.getElementById("calMesAno");
+          const calendarDiaEl = document.getElementById("calendarDiaSelecionado");
+
+          function pad(n) {
+            return String(n).padStart(2, "0");
+          }
+
+          function renderCalendario() {
+            calMesAnoEl.textContent = `${MESES[calMes]} ${calAno}`;
+
+            const primeiroDoMes = new Date(calAno, calMes, 1);
+            const offsetInicial = (primeiroDoMes.getDay() + 6) % 7; // semana começa em Segunda
+            const inicioGrid = new Date(calAno, calMes, 1 - offsetInicial);
+
+            const hojeIso = todayIso();
+            let celulas = "";
+            for (let i = 0; i < 42; i++) {
+              const dataCelula = new Date(inicioGrid);
+              dataCelula.setDate(inicioGrid.getDate() + i);
+              const dataIso = `${dataCelula.getFullYear()}-${pad(dataCelula.getMonth() + 1)}-${pad(dataCelula.getDate())}`;
+              const outroMes = dataCelula.getMonth() !== calMes;
+              const eventos = eventosPorDia[dataIso] || [];
+
+              const classes = ["calendar-day"];
+              if (outroMes) classes.push("outro-mes");
+              if (dataIso === hojeIso) classes.push("hoje");
+              if (dataIso === diaSelecionado) classes.push("selecionado");
+
+              const dots = eventos
+                .slice(0, 2)
+                .map((e) => `<span class="calendar-event-dot ${e.tipo}">${e.label}</span>`)
+                .join("");
+              const mais =
+                eventos.length > 2
+                  ? `<span style="font-size: 10px; color: var(--text-muted)">+${eventos.length - 2}</span>`
+                  : "";
+
+              celulas += `
+                <div class="${classes.join(" ")}" data-data="${dataIso}">
+                  <span class="calendar-day-num">${dataCelula.getDate()}</span>
+                  ${dots}
+                  ${mais}
+                </div>`;
+            }
+            calendarGridEl.innerHTML = celulas;
+          }
+
+          function renderDiaSelecionado() {
+            if (!diaSelecionado) {
+              calendarDiaEl.innerHTML = "";
+              return;
+            }
+            const eventos = eventosPorDia[diaSelecionado] || [];
+            const [ano, mes, dia] = diaSelecionado.split("-");
+            calendarDiaEl.innerHTML = `
+              <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px">${dia}/${mes}/${ano}</div>
+              <div class="admin-list-container" style="max-height: none">
+                ${
+                  eventos.length
+                    ? eventos
+                        .map(
+                          (e) => `
+                        <a href="aluno.html?id=${e.alunoId}" class="admin-list-item" style="text-decoration: none; color: inherit">
+                          <span class="calendar-event-dot ${e.tipo}">${e.tipo === "reuniao" ? "Reunião" : "Seguimento"}</span>
+                          <span>${e.label}</span>
+                        </a>`,
+                        )
+                        .join("")
+                    : '<div class="admin-list-item" style="color: var(--text-muted)">Sem eventos neste dia.</div>'
+                }
+              </div>`;
+          }
+
+          calendarGridEl.addEventListener("click", (event) => {
+            const cell = event.target.closest(".calendar-day");
+            if (!cell) return;
+            diaSelecionado = cell.dataset.data;
+            renderCalendario();
+            renderDiaSelecionado();
+          });
+
+          document.getElementById("calPrevBtn").addEventListener("click", () => {
+            calMes--;
+            if (calMes < 0) {
+              calMes = 11;
+              calAno--;
+            }
+            renderCalendario();
+          });
+          document.getElementById("calNextBtn").addEventListener("click", () => {
+            calMes++;
+            if (calMes > 11) {
+              calMes = 0;
+              calAno++;
+            }
+            renderCalendario();
+          });
+
+          renderCalendario();
+          } catch (calErr) {
+            console.error(calErr);
+            document.querySelector(".calendar-grid").closest(".app-card").innerHTML =
+              '<div class="admin-list-item" style="color: var(--error)">Erro ao carregar calendário.</div>';
+          }
 
           if (isAdmin(professor)) {
             toggleBtn.style.display = "inline-flex";
