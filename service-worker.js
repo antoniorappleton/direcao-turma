@@ -1,9 +1,11 @@
-const CACHE_NAME = "direcao-turma-v8";
+const CACHE_NAME = "direcao-turma-v13";
 const PRECACHE = [
   "./",
   "index.html",
   "login.html",
-  "css/styles.css",
+  "turma.html",
+  "aluno.html",
+  "css/styles.css?v=1.1.1",
   "js/core/config.js",
   "js/core/session.js",
   "js/core/auth.js",
@@ -17,6 +19,8 @@ const PRECACHE = [
   "js/utils/dates.js",
   "manifest.json",
   "assets/logo.png",
+  "assets/app-icon-192.png",
+  "assets/app-icon-512.png",
   "https://cdn.jsdelivr.net/npm/@supabase/supabase-js",
 ];
 
@@ -71,7 +75,7 @@ self.addEventListener("fetch", (event) => {
           }
           return res;
         })
-        .catch(() => caches.match(req).then((r) => r || caches.match("index.html"))),
+        .catch(() => caches.match(req, { ignoreSearch: true }).then((r) => r || caches.match("index.html"))),
     );
     return;
   }

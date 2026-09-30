@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Aluno — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.1" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -18,7 +18,7 @@
     <script src="js/services/documentos.service.js"></script>
     <script src="js/services/reunioes.service.js"></script>
   </head>
-  <body>
+  <body class="dt-workspace dt-student-body">
     <header class="app-header">
       <a href="index.html" class="brand">
         <img src="assets/logo.png" alt="Direção de Turma" class="brand-logo" />
@@ -28,32 +28,54 @@
         </div>
       </a>
       <nav class="nav-menu">
-        <a href="index.html">As Minhas Turmas</a>
+        <a href="index.html">Painel DT</a>
         <button id="signOutBtn">Sair</button>
       </nav>
     </header>
 
-    <main class="app-container">
+    <main class="app-container dt-student-page">
       <div id="loadingMsg" style="color: var(--text-muted); font-size: 14px">A carregar aluno...</div>
       <div id="alunoContent" style="display: none">
-        <div style="margin-bottom: 24px">
-          <a id="voltarTurmaLink" href="index.html" style="font-size: 13px; color: var(--text-muted); text-decoration: none">&larr; Voltar à turma</a>
-          <h2 id="alunoNome" style="font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text-main); margin-top: 8px"></h2>
-          <p id="alunoSubtitulo" style="color: var(--text-muted); font-size: 14px"></p>
-          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px">
-            <span id="alunoNumero" style="color: var(--text-muted); font-size: 13px"></span>
-            <button id="editarNumeroBtn" class="icon-btn" title="Editar número de aluno">✎</button>
+        <div class="dt-page-heading dt-student-heading">
+          <div>
+            <a id="voltarTurmaLink" href="index.html" class="dt-breadcrumb">Painel DT <span aria-hidden="true">/</span> Turma</a>
+            <div class="dt-student-title-row">
+              <span id="alunoIniciais" class="dt-student-avatar dt-student-profile-avatar" aria-hidden="true"></span>
+              <div>
+                <div class="dt-eyebrow">Ficha individual</div>
+                <h2 id="alunoNome"></h2>
+                <p id="alunoSubtitulo"></p>
+              </div>
+            </div>
           </div>
-          <div id="numeroForm" style="display: none; align-items: center; gap: 8px; margin-top: 8px">
-            <input type="text" id="numeroInput" class="form-control" style="max-width: 120px" placeholder="Nº" />
-            <button id="guardarNumeroBtn" class="btn btn-primary">Guardar</button>
-            <button id="cancelarNumeroBtn" class="btn btn-secondary">Cancelar</button>
+          <div class="dt-student-number-wrap">
+            <div class="dt-student-number"><span id="alunoNumero"></span><button id="editarNumeroBtn" class="icon-btn" title="Editar número de aluno" aria-label="Editar número de aluno">✎</button></div>
+            <div id="numeroForm" class="dt-number-form" style="display: none">
+              <input type="text" id="numeroInput" class="form-control" placeholder="N.º" aria-label="Número do aluno" />
+              <button id="guardarNumeroBtn" class="btn btn-primary">Guardar</button>
+              <button id="cancelarNumeroBtn" class="btn btn-secondary">Cancelar</button>
+            </div>
           </div>
         </div>
 
-        <div class="dashboard-grid">
+        <section class="dt-student-summary" aria-label="Resumo do aluno">
+          <div class="dt-summary-fact"><span>Encarregado principal</span><strong id="resumoEncarregado">A carregar</strong><small id="resumoEncarregadoContacto"></small></div>
+          <div class="dt-summary-fact"><span>Último contacto</span><strong id="resumoUltimoContacto">Sem contactos registados</strong><small>Contacto com Encarregado de Educação</small></div>
+          <div class="dt-summary-fact dt-summary-attention"><span>Acompanhamento</span><strong id="resumoSeguimentos">A carregar</strong><small>Situações com seguimento por concluir</small></div>
+          <div class="dt-summary-fact"><span>Documentos</span><strong id="resumoDocumentos">A carregar</strong><small>Ficheiros associados ao aluno</small></div>
+        </section>
+
+        <nav class="dt-section-nav dt-student-nav" aria-label="Secções da ficha do aluno">
+          <a href="#contactos">Encarregados</a>
+          <a href="#acompanhamento">Acompanhamento</a>
+          <a href="#reunioes">Reuniões</a>
+          <a href="#documentos">Documentos</a>
+          <a href="#historico">Histórico escolar</a>
+        </nav>
+
+        <div class="dashboard-grid dt-student-grid">
           <div>
-            <div class="app-card">
+            <div class="app-card dt-student-panel" id="acompanhamento">
               <div class="app-card-title">
                 <span>Registo / Acompanhamento</span>
                 <button id="toggleRegistoFormBtn" class="btn btn-secondary">+ Novo registo</button>
@@ -99,7 +121,7 @@
               <div id="registosList" class="ocorrencias-list"></div>
             </div>
 
-            <div class="app-card">
+            <div class="app-card dt-student-panel" id="documentos">
               <div class="app-card-title">
                 <span>Documentos</span>
                 <button id="toggleDocFormBtn" class="btn btn-secondary">+ Adicionar documento</button>
@@ -130,7 +152,7 @@
               <div id="docsList" class="admin-list-container" style="max-height: none"></div>
             </div>
 
-            <div class="app-card">
+            <div class="app-card dt-student-panel" id="reunioes">
               <div class="app-card-title">
                 <span>Reuniões com Encarregados de Educação</span>
                 <button id="toggleReuniaoFormBtn" class="btn btn-secondary">+ Pedir reunião</button>
@@ -287,12 +309,12 @@
           </div>
 
           <div class="sidebar-section">
-            <div class="app-card">
+            <div class="app-card dt-student-panel" id="contactos">
               <div class="app-card-title"><span>Encarregados de Educação</span></div>
               <div id="encarregadosList" class="admin-list-container" style="max-height: none"></div>
             </div>
 
-            <div class="app-card">
+            <div class="app-card dt-student-panel" id="historico">
               <div class="app-card-title"><span>Histórico de Matrículas</span></div>
               <div id="matriculasList" class="admin-list-container" style="max-height: none"></div>
             </div>
@@ -302,7 +324,7 @@
     </main>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação
+      made by antonio.appleton | Departamento de Programação · v1.1.1
     </footer>
 
     <script>
@@ -335,6 +357,7 @@
           }
 
           document.getElementById("alunoNome").textContent = aluno.nome;
+          document.getElementById("alunoIniciais").textContent = (aluno.nome || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((parte) => parte[0]).join("").toUpperCase();
           document.getElementById("alunoSubtitulo").textContent = turma
             ? `${turma.nome} (${turma.ano}º ano)`
             : "";
@@ -377,6 +400,9 @@
 
           const encarregadosEl = document.getElementById("encarregadosList");
           const encarregados = (aluno.aluno_encarregados || []).map((rel) => ({ ...rel.encarregados, ...rel }));
+          const encarregadoPrincipal = encarregados.find((encarregado) => encarregado.principal);
+          document.getElementById("resumoEncarregado").textContent = encarregadoPrincipal?.nome || "Sem contacto principal";
+          document.getElementById("resumoEncarregadoContacto").textContent = [encarregadoPrincipal?.telefone, encarregadoPrincipal?.email].filter(Boolean).join(" · ") || "Sem telefone ou email registado";
           encarregadosEl.innerHTML = encarregados.length
             ? encarregados
                 .map(
@@ -426,6 +452,10 @@
           const registosListEl = document.getElementById("registosList");
 
           function renderRegistos(registos) {
+            const seguimentosPendentes = registos.filter((registo) => registo.seguimento_necessario && !registo.seguimento_concluido);
+            const ultimoContacto = registos.find((registo) => registo.tipo === "contacto_ee");
+            document.getElementById("resumoSeguimentos").textContent = `${seguimentosPendentes.length} por tratar`;
+            document.getElementById("resumoUltimoContacto").textContent = ultimoContacto ? formatDate(ultimoContacto.data) : "Sem contactos registados";
             registosListEl.innerHTML = registos.length
               ? registos
                   .map(
@@ -556,6 +586,7 @@
 
           async function carregarDocs() {
             const docs = await DocumentosService.getByAluno(alunoId);
+            document.getElementById("resumoDocumentos").textContent = `${docs.length} ${docs.length === 1 ? "ficheiro" : "ficheiros"}`;
             renderDocs(docs);
           }
 
