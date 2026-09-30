@@ -1043,3 +1043,758 @@ textarea.form-control {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(15, 23, 42, 0.3);
 }
+
+/* Direção de Turma: workspace */
+body.dt-workspace {
+  --primary: #1d5b51;
+  --primary-hover: #164b43;
+  --primary-light: #e5f0eb;
+  --secondary: #d26a4d;
+  --background: #f5f6f1;
+  --surface: #fff;
+  --surface-border: #dce3dc;
+  --text-main: #20332f;
+  --text-muted: #687873;
+  --success: #397b58;
+  --success-light: #e9f3ec;
+  --warning: #a86b22;
+  --warning-light: #faf0df;
+  --error: #b34f46;
+  --error-light: #faeae7;
+  background: var(--background);
+}
+
+body.dt-workspace header.app-header {
+  background: rgba(250, 251, 247, 0.96);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+body.dt-workspace .brand-text h1 {
+  color: var(--text-main);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  letter-spacing: 0;
+}
+
+body.dt-workspace nav.nav-menu a.active {
+  color: var(--primary);
+}
+
+body.dt-workspace main.app-container {
+  max-width: 1440px;
+}
+
+.dt-page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.dt-page-heading h2 {
+  margin-top: 5px;
+  color: var(--text-main);
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 650;
+}
+
+.dt-page-heading p,
+.dt-page-heading > div > p {
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.dt-eyebrow {
+  color: var(--primary);
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.dt-heading-meta,
+.dt-class-heading-side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 132px;
+  padding: 0 0 2px 18px;
+  border-left: 2px solid var(--secondary);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.dt-heading-meta strong,
+.dt-class-heading-side strong {
+  color: var(--text-main);
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.dt-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 30px;
+  border-top: 1px solid var(--surface-border);
+  border-bottom: 1px solid var(--surface-border);
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.dt-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 90px;
+  padding: 17px 22px;
+  border-right: 1px solid var(--surface-border);
+}
+
+.dt-metric:last-child {
+  border-right: 0;
+}
+
+.dt-metric span,
+.dt-summary-fact > span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dt-metric strong {
+  color: var(--text-main);
+  font-size: 25px;
+  line-height: 1;
+  font-weight: 650;
+}
+
+.dt-metric-attention strong,
+.dt-summary-attention strong {
+  color: var(--secondary);
+}
+
+.dt-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.9fr);
+  align-items: start;
+  gap: 34px;
+}
+
+.dt-main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  min-width: 0;
+}
+
+.dt-section {
+  min-width: 0;
+}
+
+.dt-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.dt-section-heading h2 {
+  margin-top: 3px;
+  color: var(--text-main);
+  font-size: 19px;
+  line-height: 1.25;
+  font-weight: 650;
+}
+
+.dt-section-note,
+.dt-count-label {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.dt-attention-list,
+.dt-class-list,
+.dt-student-list,
+.dt-document-list {
+  border-top: 1px solid var(--surface-border);
+}
+
+.dt-attention-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  min-height: 62px;
+  padding: 10px 4px;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.dt-attention-item:hover,
+.dt-class-link:hover,
+.dt-student-row:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.dt-attention-marker {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--secondary);
+}
+
+.dt-attention-copy,
+.dt-class-name,
+.dt-student-row-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dt-attention-copy strong,
+.dt-class-name strong,
+.dt-student-row-copy strong {
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-attention-copy small,
+.dt-class-name small,
+.dt-student-row-copy small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-attention-type {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.dt-empty-state {
+  padding: 18px 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.dt-class-link {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 13px;
+  min-height: 68px;
+  padding: 8px 5px;
+  border-bottom: 1px solid var(--surface-border);
+  color: inherit;
+  text-decoration: none;
+}
+
+.dt-class-mark {
+  display: grid;
+  width: 40px;
+  aspect-ratio: 1;
+  place-items: center;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dt-class-arrow {
+  color: var(--text-muted);
+  font-size: 22px;
+  text-align: center;
+}
+
+.dt-calendar-panel {
+  position: sticky;
+  top: 94px;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.dt-calendar-panel:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.dt-calendar-panel .app-card-title {
+  margin-bottom: 14px;
+  font-size: 17px;
+}
+
+.dt-calendar-controls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dt-calendar-controls > span {
+  min-width: 118px;
+  color: var(--text-main);
+  font-size: 13px;
+  text-align: center;
+}
+
+.dt-calendar-panel .calendar-grid {
+  gap: 3px;
+}
+
+.dt-calendar-panel .calendar-day {
+  min-height: 57px;
+  border-color: transparent;
+  border-radius: 4px;
+  background: rgba(245, 246, 241, 0.6);
+}
+
+.dt-calendar-panel .calendar-day:hover,
+.dt-calendar-panel .calendar-day.hoje {
+  border-color: var(--primary);
+}
+
+.dt-calendar-panel .calendar-day.selecionado {
+  background: var(--primary-light);
+}
+
+.dt-selected-day:empty {
+  display: none;
+}
+
+.dt-selected-day:not(:empty) {
+  padding-top: 14px;
+}
+
+.dt-selected-day .admin-list-container {
+  max-height: 180px;
+}
+
+.dt-breadcrumb {
+  display: inline-flex;
+  gap: 8px;
+  margin-bottom: 15px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.dt-breadcrumb:hover {
+  color: var(--primary);
+}
+
+.dt-class-heading {
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dt-class-heading h2 {
+  margin-top: 3px;
+}
+
+.dt-class-heading-side {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  border-left: 0;
+  padding-left: 0;
+}
+
+.dt-class-heading-side > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dt-class-heading-side small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.dt-class-heading-mark {
+  display: grid;
+  width: 42px;
+  aspect-ratio: 1;
+  place-items: center;
+  background: #f8e9e3;
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dt-section-nav {
+  display: flex;
+  gap: 22px;
+  overflow-x: auto;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--surface-border);
+  scrollbar-width: none;
+}
+
+.dt-section-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.dt-section-nav a {
+  flex: 0 0 auto;
+  padding: 0 0 11px;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.dt-section-nav a:hover,
+.dt-section-nav a:focus-visible {
+  border-color: var(--secondary);
+  color: var(--text-main);
+}
+
+.dt-class-roster,
+.dt-class-documents {
+  margin-bottom: 34px;
+  scroll-margin-top: 92px;
+}
+
+.dt-roster-toolbar {
+  max-width: 440px;
+  margin: 0 0 12px;
+}
+
+.dt-roster-toolbar .search-input {
+  background: var(--surface);
+  border-radius: 6px;
+}
+
+.dt-student-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 0;
+  gap: 0 24px;
+}
+
+.dt-student-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 12px;
+  min-height: 66px;
+  padding: 8px 5px;
+  border-bottom: 1px solid var(--surface-border);
+  color: inherit;
+  text-decoration: none;
+}
+
+.dt-student-avatar {
+  display: grid;
+  width: 36px;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #e8eeea;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dt-document-list .admin-list-container,
+.dt-student-panel .admin-list-container {
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.dt-document-list .admin-list-item,
+.dt-student-panel .admin-list-item {
+  min-height: 54px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.dt-student-heading {
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dt-student-title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.dt-student-title-row h2 {
+  margin-top: 2px;
+}
+
+.dt-student-profile-avatar {
+  width: 58px;
+  font-size: 15px;
+}
+
+.dt-student-number-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.dt-student-number {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.dt-number-form {
+  align-items: center;
+  gap: 7px;
+}
+
+.dt-number-form .form-control {
+  width: 100px;
+}
+
+.dt-student-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0 0 27px;
+  border-top: 1px solid var(--surface-border);
+  border-bottom: 1px solid var(--surface-border);
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.dt-summary-fact {
+  display: flex;
+  min-width: 0;
+  min-height: 94px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 17px;
+  border-right: 1px solid var(--surface-border);
+}
+
+.dt-summary-fact:last-child {
+  border-right: 0;
+}
+
+.dt-summary-fact strong {
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-summary-fact small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-student-nav {
+  margin-bottom: 22px;
+}
+
+.dt-student-grid {
+  grid-template-columns: minmax(0, 1.6fr) minmax(270px, 0.75fr);
+  align-items: start;
+  gap: 22px;
+}
+
+.dt-student-grid > div:first-child,
+.dt-student-grid .sidebar-section {
+  min-width: 0;
+}
+
+.dt-student-panel {
+  margin-bottom: 18px;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: none;
+  scroll-margin-top: 92px;
+}
+
+.dt-student-panel:hover {
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.dt-student-panel .app-card-title {
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+
+.dt-student-panel .btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.dt-student-panel .ocorrencia-item {
+  border-radius: 6px;
+}
+
+@media (max-width: 980px) {
+  .dt-dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dt-calendar-panel {
+    position: static;
+  }
+
+  .dt-student-grid {
+    grid-template-columns: minmax(0, 1.3fr) minmax(240px, 0.8fr);
+  }
+}
+
+@media (max-width: 720px) {
+  body.dt-workspace main.app-container {
+    padding: 90px 16px 28px;
+  }
+
+  .dt-page-heading {
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .dt-page-heading h2 {
+    font-size: 24px;
+  }
+
+  .dt-heading-meta {
+    min-width: 90px;
+    padding-left: 10px;
+  }
+
+  .dt-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dt-metric {
+    min-height: 78px;
+    padding: 13px 14px;
+  }
+
+  .dt-metric:nth-child(2) {
+    border-right: 0;
+  }
+
+  .dt-metric:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .dt-section-note {
+    display: none;
+  }
+
+  .dt-calendar-panel {
+    padding: 15px;
+  }
+
+  .dt-calendar-panel .calendar-day {
+    min-height: 45px;
+  }
+
+  .dt-student-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dt-student-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dt-student-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dt-summary-fact:nth-child(2) {
+    border-right: 0;
+  }
+
+  .dt-summary-fact:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .dt-student-heading {
+    align-items: flex-start;
+  }
+
+  .dt-student-title-row {
+    align-items: flex-start;
+    gap: 11px;
+  }
+
+  .dt-student-profile-avatar {
+    width: 44px;
+    font-size: 12px;
+  }
+
+  .dt-student-number-wrap {
+    align-items: flex-end;
+    padding-top: 22px;
+  }
+
+  .dt-number-form {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .dt-number-form .btn {
+    padding: 7px 9px;
+  }
+}
+
+@media (max-width: 420px) {
+  .dt-page-heading h2 {
+    font-size: 21px;
+  }
+
+  .dt-heading-meta {
+    font-size: 10px;
+  }
+
+  .dt-metric span {
+    font-size: 11px;
+  }
+
+  .dt-section-heading h2 {
+    font-size: 17px;
+  }
+
+  .dt-attention-type {
+    display: none;
+  }
+
+  .dt-student-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dt-summary-fact,
+  .dt-summary-fact:nth-child(2) {
+    min-height: 74px;
+    border-right: 0;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .dt-summary-fact:last-child {
+    border-bottom: 0;
+  }
+}

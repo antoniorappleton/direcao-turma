@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Turma — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.1" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -16,7 +16,7 @@
     <script src="js/services/alunos.service.js"></script>
     <script src="js/services/documentos.service.js"></script>
   </head>
-  <body>
+  <body class="dt-workspace dt-class-body">
     <header class="app-header">
       <a href="index.html" class="brand">
         <img src="assets/logo.png" alt="Direção de Turma" class="brand-logo" />
@@ -26,38 +26,59 @@
         </div>
       </a>
       <nav class="nav-menu">
-        <a href="index.html">As Minhas Turmas</a>
+        <a href="index.html">Painel DT</a>
         <button id="signOutBtn">Sair</button>
       </nav>
     </header>
 
-    <main class="app-container">
+    <main class="app-container dt-class-page">
       <div id="loadingMsg" style="color: var(--text-muted); font-size: 14px">A carregar turma...</div>
       <div id="turmaContent" style="display: none">
-        <div style="margin-bottom: 24px">
-          <a href="index.html" style="font-size: 13px; color: var(--text-muted); text-decoration: none">&larr; As Minhas Turmas</a>
-          <h2 id="turmaTitulo" style="font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text-main); margin-top: 8px"></h2>
-          <p id="turmaSubtitulo" style="color: var(--text-muted); font-size: 14px"></p>
-        </div>
-
-        <div class="app-card">
-          <div class="app-card-title">
-            <span>Alunos</span>
-            <span id="alunosCount" class="badge badge-synced"></span>
+        <div class="dt-page-heading dt-class-heading">
+          <div>
+            <a href="index.html" class="dt-breadcrumb">Painel DT <span aria-hidden="true">/</span> A minha turma</a>
+            <div class="dt-eyebrow">Visão geral da turma</div>
+            <h2 id="turmaTitulo"></h2>
+            <p id="turmaSubtitulo"></p>
           </div>
-
-          <div class="search-wrapper" style="margin-bottom: 16px">
-            <input type="text" id="searchAluno" class="search-input" placeholder="Pesquisar aluno..." />
-          </div>
-
-          <div id="alunosList" class="admin-list-container" style="max-height: none">
-            <div class="admin-list-item" style="color: var(--text-muted)">A carregar alunos...</div>
+          <div class="dt-class-heading-side">
+            <span class="dt-class-heading-mark" aria-hidden="true">DT</span>
+            <span><small>Ano letivo</small><strong id="classSchoolYear">—</strong></span>
           </div>
         </div>
 
-        <div class="app-card">
-          <div class="app-card-title">
-            <span>Documentos da Turma</span>
+        <nav class="dt-section-nav" aria-label="Secções da turma">
+          <a href="#alunos">Alunos</a>
+          <a href="#documentos">Documentos</a>
+        </nav>
+
+        <section class="dt-section dt-class-roster" id="alunos">
+          <div class="dt-section-heading">
+            <div>
+              <div class="dt-eyebrow">Turma</div>
+              <h2>Alunos</h2>
+            </div>
+            <span id="alunosCount" class="dt-count-label"></span>
+          </div>
+
+          <div class="dt-roster-toolbar">
+            <label class="search-wrapper" for="searchAluno">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input type="search" id="searchAluno" class="search-input" placeholder="Pesquisar por nome ou número" />
+            </label>
+          </div>
+
+          <div id="alunosList" class="dt-student-list">
+            <div class="dt-empty-state">A carregar alunos...</div>
+          </div>
+        </section>
+
+        <section class="dt-section dt-class-documents" id="documentos">
+          <div class="dt-section-heading">
+            <div>
+              <div class="dt-eyebrow">Arquivo partilhado</div>
+              <h2>Documentos da turma</h2>
+            </div>
             <button id="toggleDocFormBtn" class="btn btn-secondary">+ Adicionar documento</button>
           </div>
 
@@ -83,13 +104,13 @@
             <div id="docMsg"></div>
           </div>
 
-          <div id="docsList" class="admin-list-container" style="max-height: none"></div>
-        </div>
+          <div id="docsList" class="dt-document-list"></div>
+        </section>
       </div>
     </main>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação
+      made by antonio.appleton | Departamento de Programação · v1.1.1
     </footer>
 
     <script>
@@ -117,6 +138,9 @@
 
           document.getElementById("turmaTitulo").textContent = `${turma.nome} (${turma.ano}º ano)`;
           document.getElementById("turmaSubtitulo").textContent = turma.ciclos?.nome || "";
+          const anoAtual = new Date().getFullYear();
+          const inicioAnoLetivo = new Date().getMonth() >= 8 ? anoAtual : anoAtual - 1;
+          document.getElementById("classSchoolYear").textContent = `${inicioAnoLetivo}/${inicioAnoLetivo + 1}`;
 
           const alunos = await AlunosService.getByTurma(turmaId);
           const listEl = document.getElementById("alunosList");
@@ -129,11 +153,15 @@
             }
             listEl.innerHTML = items
               .map(
-                (a) => `
-                <a href="aluno.html?id=${a.id}" class="admin-list-item" style="text-decoration: none; color: inherit">
-                  <div><strong>${a.nome}</strong></div>
-                  <span style="color: var(--text-muted); font-size: 12px">${a.numero_interno ?? ""}</span>
-                </a>`,
+                (a) => {
+                  const iniciais = (a.nome || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((parte) => parte[0]).join("").toUpperCase();
+                  return `
+                <a href="aluno.html?id=${a.id}" class="dt-student-row">
+                  <span class="dt-student-avatar" aria-hidden="true">${iniciais}</span>
+                  <span class="dt-student-row-copy"><strong>${a.nome}</strong><small>${a.numero_interno ? `N.º ${a.numero_interno}` : "Número por preencher"}</small></span>
+                  <span class="dt-class-arrow" aria-hidden="true">›</span>
+                </a>`;
+                },
               )
               .join("");
           }
@@ -142,7 +170,7 @@
 
           document.getElementById("searchAluno").addEventListener("input", (e) => {
             const q = e.target.value.trim().toLowerCase();
-            renderAlunos(alunos.filter((a) => a.nome?.toLowerCase().includes(q)));
+            renderAlunos(alunos.filter((a) => `${a.nome || ""} ${a.numero_interno || ""}`.toLowerCase().includes(q)));
           });
 
           const docsListEl = document.getElementById("docsList");

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.1" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -17,7 +17,7 @@
     <script src="js/services/registos.service.js"></script>
     <script src="js/services/reunioes.service.js"></script>
   </head>
-  <body>
+  <body class="dt-workspace dt-dashboard-body">
     <header class="app-header">
       <a href="index.html" class="brand">
         <img src="assets/logo.png" alt="Direção de Turma" class="brand-logo" />
@@ -27,43 +27,78 @@
         </div>
       </a>
       <nav class="nav-menu">
-        <a href="index.html" class="active">As Minhas Turmas</a>
+        <a href="index.html" class="active">Painel DT</a>
         <button id="signOutBtn">Sair</button>
       </nav>
     </header>
 
-    <main class="app-container">
-      <div style="margin-bottom: 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+    <main class="app-container dt-dashboard">
+      <section class="dt-page-heading">
         <div>
-          <h2 id="turmasTitulo" style="font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text-main)">
-            As Minhas Turmas
-          </h2>
-          <p style="color: var(--text-muted); font-size: 14px" id="welcomeMsg"></p>
+          <div class="dt-eyebrow">Comunidade CSJ Ramalhão</div>
+          <h2 id="turmasTitulo">Painel da Direção de Turma</h2>
+          <p id="welcomeMsg"></p>
         </div>
-        <button id="toggleTurmasBtn" class="btn btn-secondary" style="display: none"></button>
-      </div>
+        <div class="dt-heading-meta">
+          <span>Ano letivo</span>
+          <strong id="anoLetivo"></strong>
+        </div>
+      </section>
 
-      <div class="app-card" style="margin-bottom: 24px">
-        <div class="app-card-title">
-          <span>Calendário</span>
-          <div style="display: flex; align-items: center; gap: 8px">
-            <button id="calPrevBtn" class="icon-btn" title="Mês anterior">‹</button>
-            <span id="calMesAno" style="font-weight: 600; min-width: 140px; text-align: center"></span>
-            <button id="calNextBtn" class="icon-btn" title="Mês seguinte">›</button>
+      <section class="dt-metrics" aria-label="Resumo da Direção de Turma">
+        <div class="dt-metric"><span>Turmas atribuídas</span><strong id="metricTurmas">—</strong></div>
+        <div class="dt-metric"><span>Alunos acompanhados</span><strong id="metricAlunos">—</strong></div>
+        <div class="dt-metric dt-metric-attention"><span>Seguimentos pendentes</span><strong id="metricSeguimentos">—</strong></div>
+        <div class="dt-metric"><span>Reuniões por tratar</span><strong id="metricReunioes">—</strong></div>
+      </section>
+
+      <div class="dt-dashboard-grid">
+        <div class="dt-main-column">
+          <section class="dt-section">
+            <div class="dt-section-heading">
+              <div>
+                <div class="dt-eyebrow">Ação prioritária</div>
+                <h2>Em atenção</h2>
+              </div>
+              <span class="dt-section-note">Seguimentos e reuniões por tratar</span>
+            </div>
+            <div id="attentionList" class="dt-attention-list">
+              <div class="dt-empty-state">A carregar situações...</div>
+            </div>
+          </section>
+
+          <section class="dt-section dt-classes-section">
+            <div class="dt-section-heading">
+              <div>
+                <div class="dt-eyebrow">Acesso rápido</div>
+                <h2 id="turmasSectionTitle">As minhas turmas</h2>
+              </div>
+              <button id="toggleTurmasBtn" class="btn btn-secondary" style="display: none"></button>
+            </div>
+            <div id="turmasList" class="dt-class-list">
+              <div class="dt-empty-state">A carregar turmas...</div>
+            </div>
+          </section>
+        </div>
+
+        <section class="app-card dt-calendar-panel">
+          <div class="app-card-title">
+            <span>Agenda</span>
+            <div class="dt-calendar-controls">
+              <button id="calPrevBtn" class="icon-btn" title="Mês anterior" aria-label="Mês anterior">‹</button>
+              <span id="calMesAno"></span>
+              <button id="calNextBtn" class="icon-btn" title="Mês seguinte" aria-label="Mês seguinte">›</button>
+            </div>
           </div>
-        </div>
-        <div class="calendar-grid" id="calendarHeader"></div>
-        <div class="calendar-grid" id="calendarGrid" style="margin-top: 4px"></div>
-        <div id="calendarDiaSelecionado" style="margin-top: 16px"></div>
-      </div>
-
-      <div id="turmasList" class="admin-list-container">
-        <div class="admin-list-item" style="color: var(--text-muted)">A carregar turmas...</div>
+          <div class="calendar-grid" id="calendarHeader"></div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+          <div id="calendarDiaSelecionado" class="dt-selected-day"></div>
+        </section>
       </div>
     </main>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação
+      made by antonio.appleton | Departamento de Programação · v1.1.1
     </footer>
 
     <script>
@@ -76,6 +111,10 @@
         if (welcomeEl && professor) {
           welcomeEl.textContent = `Olá, ${professor.nome || professor.email}`;
         }
+
+        const anoAtual = new Date().getFullYear();
+        const inicioAnoLetivo = new Date().getMonth() >= 8 ? anoAtual : anoAtual - 1;
+        document.getElementById("anoLetivo").textContent = `${inicioAnoLetivo}/${inicioAnoLetivo + 1}`;
 
         document.getElementById("signOutBtn")?.addEventListener("click", signOut);
 
@@ -92,13 +131,10 @@
           listEl.innerHTML = turmas
             .map(
               (t) => `
-              <a href="turma.html?id=${t.id}" class="admin-list-item" style="text-decoration: none; color: inherit">
-                <div>
-                  <strong>${t.nome} (${t.ano}º ano)</strong>
-                  <span style="color: var(--text-muted); font-size: 12px; display: block">
-                    ${t.ciclos?.nome || ""}
-                  </span>
-                </div>
+              <a href="turma.html?id=${t.id}" class="dt-class-link">
+                <span class="dt-class-mark" aria-hidden="true">${String(t.ano || "").padStart(2, "0")}</span>
+                <span class="dt-class-name"><strong>${t.nome} (${t.ano}º ano)</strong><small>${t.ciclos?.nome || ""}</small></span>
+                <span class="dt-class-arrow" aria-hidden="true">›</span>
               </a>`,
             )
             .join("");
@@ -107,6 +143,7 @@
         try {
           const todasTurmas = await TurmasService.getAll();
           const minhasTurmas = todasTurmas.filter((t) => isDiretorDaTurma(professor, t));
+          document.getElementById("metricTurmas").textContent = minhasTurmas.length;
 
           let aMostrarTodas = false;
           render(minhasTurmas);
@@ -119,11 +156,41 @@
           const turmaIdsCalendario = minhasTurmas.map((t) => t.id);
           const alunosCalendario = await AlunosService.getByTurmas(turmaIdsCalendario);
           const alunoIdsCalendario = alunosCalendario.map((a) => a.id);
+          document.getElementById("metricAlunos").textContent = alunosCalendario.length;
 
           const [reunioesCalendario, seguimentosCalendario] = await Promise.all([
             ReunioesService.getByAlunos(alunoIdsCalendario),
             RegistosService.getSeguimentosPendentesByAlunos(alunoIdsCalendario),
           ]);
+          const reunioesPendentes = reunioesCalendario.filter((r) => ["pedida", "agendada", "confirmada"].includes(r.estado));
+          document.getElementById("metricSeguimentos").textContent = seguimentosCalendario.length;
+          document.getElementById("metricReunioes").textContent = reunioesPendentes.length;
+
+          const attentionEl = document.getElementById("attentionList");
+          const prioridades = [
+            ...seguimentosCalendario.map((s) => ({
+              alunoId: s.aluno_id,
+              nome: s.alunos?.nome || "Aluno",
+              detalhe: `Seguimento até ${formatDate(s.data_seguimento)}`,
+              tipo: "Seguimento",
+              data: s.data_seguimento,
+            })),
+            ...reunioesPendentes.map((r) => ({
+              alunoId: r.aluno_id,
+              nome: r.alunos?.nome || "Aluno",
+              detalhe: r.estado === "pedida" ? "Pedido de reunião por agendar" : `Reunião ${r.estado}`,
+              tipo: "Reunião",
+              data: r.data_agendada || r.data_pedida,
+            })),
+          ].sort((a, b) => (a.data || "9999").localeCompare(b.data || "9999"));
+          attentionEl.innerHTML = prioridades.length
+            ? prioridades.slice(0, 5).map((item) => `
+                <a class="dt-attention-item" href="aluno.html?id=${item.alunoId}">
+                  <span class="dt-attention-marker" aria-hidden="true"></span>
+                  <span class="dt-attention-copy"><strong>${item.nome}</strong><small>${item.detalhe}</small></span>
+                  <span class="dt-attention-type">${item.tipo}</span>
+                </a>`).join("")
+            : '<div class="dt-empty-state">Sem situações prioritárias por tratar.</div>';
 
           const eventosPorDia = {};
           function adicionarEvento(dataIso, evento) {
@@ -288,7 +355,7 @@
           renderCalendario();
           } catch (calErr) {
             console.error(calErr);
-            document.querySelector(".calendar-grid").closest(".app-card").innerHTML =
+              document.querySelector(".calendar-grid").closest(".app-card").innerHTML =
               '<div class="admin-list-item" style="color: var(--error)">Erro ao carregar calendário.</div>';
           }
 
@@ -296,7 +363,7 @@
             toggleBtn.style.display = "inline-flex";
             const atualizarToggle = () => {
               toggleBtn.textContent = aMostrarTodas ? "Ver só as minhas turmas" : "Ver todas as turmas";
-              tituloEl.textContent = aMostrarTodas ? "Todas as Turmas" : "As Minhas Turmas";
+              document.getElementById("turmasSectionTitle").textContent = aMostrarTodas ? "Todas as turmas" : "As minhas turmas";
             };
             atualizarToggle();
             toggleBtn.addEventListener("click", () => {
