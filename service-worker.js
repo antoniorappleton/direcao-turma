@@ -1,4 +1,4 @@
-const CACHE_NAME = "direcao-turma-v5";
+const CACHE_NAME = "direcao-turma-v6";
 const PRECACHE = [
   "./",
   "index.html",
@@ -51,6 +51,12 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
+
+  // Pedidos de extensões do browser (chrome-extension://, etc.) não podem
+  // ser guardados em cache — deixar passar sem interceção.
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return;
+  }
 
   if (
     req.mode === "navigate" ||
