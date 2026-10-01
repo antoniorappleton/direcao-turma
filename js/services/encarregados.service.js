@@ -20,6 +20,14 @@ const EncarregadosService = {
     return data;
   },
 
+  async update(id, encarregado) {
+    const { error } = await window.supabase
+      .from("encarregados")
+      .update(encarregado)
+      .eq("id", id);
+    if (error) throw error;
+  },
+
   async linkToAluno(alunoId, encarregadoId, { principal = false, responsavelLegal = false } = {}) {
     const { error } = await window.supabase.from("aluno_encarregados").insert([
       {
