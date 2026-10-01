@@ -1,4 +1,4 @@
-const CACHE_NAME = "direcao-turma-v16";
+const CACHE_NAME = "direcao-turma-v17";
 const PRECACHE = [
   "./",
   "index.html",
@@ -59,6 +59,15 @@ self.addEventListener("fetch", (event) => {
   // Pedidos de extensões do browser (chrome-extension://, etc.) não podem
   // ser guardados em cache — deixar passar sem interceção.
   if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return;
+  }
+
+  // Pedidos ao Supabase (REST/Auth/Storage/Realtime) nunca passam pela
+  // cache — são sempre dados dinâmicos. Servir uma resposta em cache aqui
+  // fazia um registo novo só aparecer depois de recarregar a página,
+  // porque o stale-while-revalidate abaixo devolve a versão antiga e só
+  // atualiza a cache em segundo plano, para o pedido seguinte.
+  if (url.hostname.endsWith(".supabase.co")) {
     return;
   }
 
