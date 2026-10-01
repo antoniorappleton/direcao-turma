@@ -1903,6 +1903,24 @@ body.dt-workspace main.app-container {
   width: auto;
 }
 
+.dt-checklist-group {
+  margin-bottom: 18px;
+}
+
+.dt-checklist-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.dt-checklist-group .dt-checkbox-row {
+  flex-direction: column;
+  gap: 8px;
+}
+
 .dt-encarregado-item {
   display: flex;
   justify-content: space-between;

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Aluno — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.5" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.6" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -14,10 +14,12 @@
     <script src="js/utils/dates.js"></script>
     <script src="js/services/turmas.service.js"></script>
     <script src="js/services/alunos.service.js"></script>
+    <script src="js/services/professor-turmas.service.js"></script>
     <script src="js/services/encarregados.service.js"></script>
     <script src="js/services/registos.service.js"></script>
     <script src="js/services/documentos.service.js"></script>
     <script src="js/services/reunioes.service.js"></script>
+    <script src="js/services/scriptorium.service.js"></script>
   </head>
   <body class="dt-workspace dt-student-body">
     <header class="app-header">
@@ -30,6 +32,7 @@
       </a>
       <nav class="nav-menu">
         <a href="index.html">Painel DT</a>
+        <a href="minhas-turmas.html">As minhas turmas</a>
         <button id="signOutBtn">Sair</button>
       </nav>
     </header>
@@ -71,6 +74,7 @@
           <a href="#acompanhamento">Acompanhamento</a>
           <a href="#reunioes">Reuniões</a>
           <a href="#documentos">Documentos</a>
+          <a href="#ocorrencias-scriptorium">Ocorrências</a>
           <a href="#historico">Histórico escolar</a>
         </nav>
 
@@ -151,6 +155,16 @@
               </div>
 
               <div id="docsList" class="admin-list-container" style="max-height: none"></div>
+            </div>
+
+            <div class="app-card dt-student-panel" id="ocorrencias-scriptorium">
+              <div class="app-card-title">
+                <span>Ocorrências (Scriptorium)</span>
+              </div>
+              <p style="color: var(--text-muted); font-size: 12px; margin: -8px 0 12px">
+                Registadas por outros professores no Scriptorium — só leitura aqui.
+              </p>
+              <div id="ocorrenciasScriptoriumList" class="ocorrencias-list"></div>
             </div>
 
             <div class="app-card dt-student-panel" id="reunioes">
@@ -401,7 +415,7 @@
     </div>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.5
+      made by antonio.appleton | Departamento de Programação · v1.1.6
     </footer>
 
     <script>
@@ -419,6 +433,9 @@
         }
 
         const professor = await getCurrentProfessor();
+        const minhasTurmaIds = isAdmin(professor)
+          ? null
+          : await ProfessorTurmasService.getIdsByProfessor(professor.id);
 
         try {
           const aluno = await AlunosService.getById(alunoId);
@@ -428,7 +445,7 @@
           }
 
           const turma = aluno.turma_id ? await TurmasService.getById(aluno.turma_id) : null;
-          if (!canAccessTurma(professor, turma || {})) {
+          if (!canAccessTurma(professor, turma || {}, minhasTurmaIds || [])) {
             loadingEl.textContent = "Não tens acesso a este aluno.";
             return;
           }
@@ -795,6 +812,32 @@
           }
 
           await carregarDocs();
+
+          const ocorrenciasScriptoriumEl = document.getElementById("ocorrenciasScriptoriumList");
+          try {
+            const ocorrenciasScriptorium = await ScriptoriumService.getOcorrenciasByAluno(alunoId);
+            ocorrenciasScriptoriumEl.innerHTML = ocorrenciasScriptorium.length
+              ? ocorrenciasScriptorium
+                  .map(
+                    (o) => `
+                    <div class="ocorrencia-item">
+                      <div class="ocorrencia-header">
+                        <span class="ocorrencia-student">${o.motivo || "Sem motivo especificado"}</span>
+                      </div>
+                      <div class="ocorrencia-meta">
+                        <span>${formatDate(o.data)}</span>
+                        ${o.bloco_horario ? `<span>${o.bloco_horario}</span>` : ""}
+                        ${o.professores?.nome ? `<span>${o.professores.nome}</span>` : ""}
+                      </div>
+                    </div>`,
+                  )
+                  .join("")
+              : '<div class="admin-list-item" style="color: var(--text-muted)">Sem ocorrências registadas no Scriptorium.</div>';
+          } catch (err) {
+            console.error("Erro ao carregar ocorrências do Scriptorium", err);
+            ocorrenciasScriptoriumEl.innerHTML =
+              '<div class="admin-list-item" style="color: var(--error)">Erro ao carregar ocorrências do Scriptorium.</div>';
+          }
 
           const docFormEl = document.getElementById("docForm");
           const docMsgEl = document.getElementById("docMsg");

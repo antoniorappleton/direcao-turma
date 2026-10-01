@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.5" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.6" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -14,6 +14,7 @@
     <script src="js/utils/dates.js"></script>
     <script src="js/services/turmas.service.js"></script>
     <script src="js/services/alunos.service.js"></script>
+    <script src="js/services/professor-turmas.service.js"></script>
     <script src="js/services/registos.service.js"></script>
     <script src="js/services/reunioes.service.js"></script>
   </head>
@@ -28,6 +29,7 @@
       </a>
       <nav class="nav-menu">
         <a href="index.html" class="active">Painel DT</a>
+        <a href="minhas-turmas.html">As minhas turmas</a>
         <button id="signOutBtn">Sair</button>
       </nav>
     </header>
@@ -107,7 +109,7 @@
     </div>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.5
+      made by antonio.appleton | Departamento de Programação · v1.1.6
     </footer>
 
     <script>
@@ -151,7 +153,18 @@
 
         try {
           const todasTurmas = await TurmasService.getAll();
-          const minhasTurmas = todasTurmas.filter((t) => isDiretorDaTurma(professor, t));
+
+          let minhasTurmaIds;
+          if (isAdmin(professor)) {
+            minhasTurmaIds = todasTurmas.map((t) => t.id);
+          } else {
+            minhasTurmaIds = await ProfessorTurmasService.getIdsByProfessor(professor.id);
+            if (!minhasTurmaIds.length) {
+              window.location.href = "minhas-turmas.html?primeira=1";
+              return;
+            }
+          }
+          const minhasTurmas = todasTurmas.filter((t) => minhasTurmaIds.includes(t.id));
           document.getElementById("metricTurmas").textContent = minhasTurmas.length;
 
           let aMostrarTodas = false;

@@ -24,6 +24,11 @@ function isDiretorDaTurma(professor, turma) {
   return turma.diretor_turma === professor.nome;
 }
 
-function canAccessTurma(professor, turma) {
-  return isAdmin(professor) || isDiretorDaTurma(professor, turma);
+// `minhasTurmaIds` é a seleção do próprio professor em professor_turmas
+// (ver minhas-turmas.html) — as turmas que leciona, escolhidas por ele.
+// Admins veem sempre tudo; os restantes só acedem ao que selecionaram,
+// independentemente de serem ou não o DT (ver isDiretorDaTurma, que só
+// serve para pré-marcar o checklist, não para controlar acesso).
+function canAccessTurma(professor, turma, minhasTurmaIds = []) {
+  return isAdmin(professor) || minhasTurmaIds.includes(turma.id);
 }

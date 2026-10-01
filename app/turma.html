@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Turma — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.5" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.6" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -14,6 +14,7 @@
     <script src="js/utils/dates.js"></script>
     <script src="js/services/turmas.service.js"></script>
     <script src="js/services/alunos.service.js"></script>
+    <script src="js/services/professor-turmas.service.js"></script>
     <script src="js/services/documentos.service.js"></script>
   </head>
   <body class="dt-workspace dt-class-body">
@@ -27,6 +28,7 @@
       </a>
       <nav class="nav-menu">
         <a href="index.html">Painel DT</a>
+        <a href="minhas-turmas.html">As minhas turmas</a>
         <button id="signOutBtn">Sair</button>
       </nav>
     </header>
@@ -110,7 +112,7 @@
     </main>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.5
+      made by antonio.appleton | Departamento de Programação · v1.1.6
     </footer>
 
     <script>
@@ -128,10 +130,13 @@
         }
 
         const professor = await getCurrentProfessor();
+        const minhasTurmaIds = isAdmin(professor)
+          ? null
+          : await ProfessorTurmasService.getIdsByProfessor(professor.id);
 
         try {
           const turma = await TurmasService.getById(turmaId);
-          if (!turma || !canAccessTurma(professor, turma)) {
+          if (!turma || !canAccessTurma(professor, turma, minhasTurmaIds || [])) {
             loadingEl.textContent = "Não tens acesso a esta turma.";
             return;
           }

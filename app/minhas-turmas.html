@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>As minhas turmas — Direção de Turma</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.6" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="js/core/config.js"></script>
+    <script src="js/core/session.js"></script>
+    <script src="js/core/auth.js"></script>
+    <script src="js/core/permissions.js"></script>
+    <script src="js/services/turmas.service.js"></script>
+    <script src="js/services/professor-turmas.service.js"></script>
+  </head>
+  <body class="dt-workspace">
+    <header class="app-header">
+      <a href="index.html" class="brand">
+        <img src="assets/logo.png" alt="Direção de Turma" class="brand-logo" />
+        <div class="brand-text">
+          <h1>DIREÇÃO DE TURMA</h1>
+          <div class="tag">Comunidade CSJ Ramalhão</div>
+        </div>
+      </a>
+      <nav class="nav-menu">
+        <a href="index.html">Painel DT</a>
+        <a href="minhas-turmas.html" class="active">As minhas turmas</a>
+        <button id="signOutBtn">Sair</button>
+      </nav>
+    </header>
+
+    <main class="app-container narrow-container">
+      <div id="loadingMsg" style="color: var(--text-muted); font-size: 14px">A carregar turmas...</div>
+
+      <div id="conteudo" style="display: none">
+        <div class="app-card">
+          <h2 class="app-card-title" style="margin-bottom: 4px">As minhas turmas</h2>
+          <p id="introMsg" style="color: var(--text-muted); font-size: 13px; margin: 0 0 20px">
+            Seleciona as turmas que lecionas. Só terás acesso a estas no painel DT — podes voltar aqui para
+            atualizar a qualquer momento.
+          </p>
+
+          <div id="turmasChecklist"></div>
+
+          <div id="formMsg" style="margin-top: 12px"></div>
+
+          <div style="display: flex; gap: 12px; margin-top: 20px">
+            <button id="guardarBtn" class="btn btn-primary" style="flex: 2">Guardar</button>
+            <a href="index.html" class="btn btn-secondary" style="flex: 1; text-align: center">Cancelar</a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
+      made by antonio.appleton | Departamento de Programação · v1.1.6
+    </footer>
+
+    <script>
+      (async () => {
+        const session = await requireSession("login.html");
+        if (!session) return;
+
+        document.getElementById("signOutBtn")?.addEventListener("click", signOut);
+
+        const primeiraVez = new URLSearchParams(location.search).get("primeira") === "1";
+        const loadingEl = document.getElementById("loadingMsg");
+        const conteudoEl = document.getElementById("conteudo");
+        const checklistEl = document.getElementById("turmasChecklist");
+        const formMsgEl = document.getElementById("formMsg");
+
+        try {
+          const professor = await getCurrentProfessor();
+          if (!professor) {
+            loadingEl.textContent = "Não foi possível identificar o professor.";
+            return;
+          }
+
+          if (primeiraVez) {
+            document.getElementById("introMsg").textContent =
+              "Antes de começares: seleciona as turmas que lecionas. Só terás acesso a estas no painel DT — podes voltar aqui para atualizar a qualquer momento.";
+          }
+
+          const [todasTurmas, jaSelecionadas] = await Promise.all([
+            TurmasService.getAll(),
+            ProfessorTurmasService.getIdsByProfessor(professor.id),
+          ]);
+
+          // Pré-seleção: já guardadas antes, ou (se ainda não há nenhuma) as
+          // turmas de que já é DT por nome — só para poupar cliques.
+          const selecaoInicial = new Set(
+            jaSelecionadas.length ? jaSelecionadas : todasTurmas.filter((t) => isDiretorDaTurma(professor, t)).map((t) => t.id),
+          );
+
+          const porCiclo = new Map();
+          todasTurmas.forEach((t) => {
+            const ciclo = t.ciclos?.nome || "Sem ciclo";
+            if (!porCiclo.has(ciclo)) porCiclo.set(ciclo, []);
+            porCiclo.get(ciclo).push(t);
+          });
+
+          checklistEl.innerHTML = [...porCiclo.entries()]
+            .map(
+              ([ciclo, turmas]) => `
+              <div class="dt-checklist-group">
+                <div class="dt-checklist-group-title">${ciclo}</div>
+                <div class="dt-checkbox-row">
+                  ${turmas
+                    .map(
+                      (t) => `
+                      <label>
+                        <input type="checkbox" class="turma-check" value="${t.id}" ${selecaoInicial.has(t.id) ? "checked" : ""} />
+                        ${t.nome} (${t.ano}º ano)${isDiretorDaTurma(professor, t) ? " · DT" : ""}
+                      </label>`,
+                    )
+                    .join("")}
+                </div>
+              </div>`,
+            )
+            .join("");
+
+          document.getElementById("guardarBtn").addEventListener("click", async () => {
+            const selecionadas = Array.from(document.querySelectorAll(".turma-check:checked")).map((cb) => cb.value);
+            const btn = document.getElementById("guardarBtn");
+            btn.disabled = true;
+            btn.textContent = "A guardar…";
+            try {
+              await ProfessorTurmasService.setTurmas(professor.id, selecionadas);
+              window.location.href = "index.html";
+            } catch (err) {
+              console.error(err);
+              formMsgEl.innerHTML = '<div class="alert alert-error">Erro ao guardar as turmas.</div>';
+              btn.disabled = false;
+              btn.textContent = "Guardar";
+            }
+          });
+
+          loadingEl.style.display = "none";
+          conteudoEl.style.display = "block";
+        } catch (e) {
+          console.error(e);
+          loadingEl.textContent = "Erro ao carregar turmas.";
+        }
+      })();
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("service-worker.js")
+          .then((reg) => {
+            if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+            reg.addEventListener("updatefound", () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener("statechange", () => {
+                if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                  newWorker.postMessage({ type: "SKIP_WAITING" });
+                }
+              });
+            });
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+              if (refreshing) return;
+              refreshing = true;
+              window.location.reload();
+            });
+          })
+          .catch(console.error);
+      }
+    </script>
+  </body>
+</html>
