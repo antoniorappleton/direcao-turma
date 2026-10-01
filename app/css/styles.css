@@ -1841,16 +1841,31 @@ body.dt-workspace main.app-container {
   }
 }
 
-.edit-dialog {
-  width: min(420px, calc(100vw - 32px));
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  box-shadow: var(--shadow-lg);
+.dt-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.45);
 }
 
-.edit-dialog::backdrop {
-  background: rgba(15, 23, 42, 0.45);
+.dt-modal-overlay.aberto {
+  display: flex;
+}
+
+.dt-modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: min(85vh, 640px);
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-xl);
+  padding: 24px;
 }
 
 .badge-neutral {

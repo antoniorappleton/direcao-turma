@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Aluno — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.3" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.4" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -327,7 +327,8 @@
       </div>
     </main>
 
-    <dialog id="encarregadoDialog" class="edit-dialog">
+    <div id="encarregadoOverlay" class="dt-modal-overlay">
+      <div class="dt-modal" role="dialog" aria-modal="true" aria-labelledby="encarregadoDialogTitle">
       <form id="encarregadoForm">
         <h3 class="app-card-title" id="encarregadoDialogTitle" style="margin-bottom: 16px">
           Adicionar Encarregado de Educação
@@ -348,7 +349,7 @@
               data-target="encarregadoEmail"
               title="Copiar email"
               aria-label="Copiar email"
-            >📋</button>
+            ><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 1H4a2 2 0 0 0-2 2v14h2V3h11V1Zm4 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"></path></svg></button>
           </div>
         </div>
 
@@ -362,7 +363,7 @@
               data-target="encarregadoTelefone"
               title="Copiar telefone"
               aria-label="Copiar telefone"
-            >📋</button>
+            ><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 1H4a2 2 0 0 0-2 2v14h2V3h11V1Zm4 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"></path></svg></button>
           </div>
         </div>
 
@@ -388,10 +389,11 @@
           <button type="button" id="encarregadoCancelBtn" class="btn btn-secondary" style="flex: 1">Cancelar</button>
         </div>
       </form>
-    </dialog>
+      </div>
+    </div>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.3
+      made by antonio.appleton | Departamento de Programação · v1.1.4
     </footer>
 
     <script>
@@ -468,9 +470,11 @@
           const encarregadosEl = document.getElementById("encarregadosList");
           let encarregadosAtuais = [];
 
+          const COPY_ICON_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 1H4a2 2 0 0 0-2 2v14h2V3h11V1Zm4 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"></path></svg>';
+
           function copyIconBtn(value, label) {
             if (!value) return "";
-            return `<button type="button" class="icon-btn copy-chip-btn" data-copy="${value}" title="Copiar ${label}" aria-label="Copiar ${label}">📋</button>`;
+            return `<button type="button" class="icon-btn copy-chip-btn" data-copy="${value}" title="Copiar ${label}" aria-label="Copiar ${label}">${COPY_ICON_SVG}</button>`;
           }
 
           function renderEncarregados(encarregados) {
@@ -527,7 +531,7 @@
             }
           });
 
-          const encarregadoDialog = document.getElementById("encarregadoDialog");
+          const encarregadoOverlayEl = document.getElementById("encarregadoOverlay");
           const encarregadoFormEl = document.getElementById("encarregadoForm");
           const encarregadoMsgEl = document.getElementById("encarregadoMsg");
           const encarregadoDialogTitleEl = document.getElementById("encarregadoDialogTitle");
@@ -544,13 +548,23 @@
             document.getElementById("encarregadoEmpregado").checked = !!encarregado?.empregado;
             document.getElementById("encarregadoDesempregado").checked = !!encarregado?.desempregado;
             document.getElementById("encarregadoNotas").value = encarregado?.notas || "";
-            encarregadoDialog.showModal();
+            encarregadoOverlayEl.classList.add("aberto");
+          }
+
+          function fecharEncarregadoForm() {
+            encarregadoOverlayEl.classList.remove("aberto");
           }
 
           document.getElementById("addEncarregadoBtn").addEventListener("click", () => abrirEncarregadoForm(null));
-          document.getElementById("encarregadoCancelBtn").addEventListener("click", () => encarregadoDialog.close());
+          document.getElementById("encarregadoCancelBtn").addEventListener("click", fecharEncarregadoForm);
+          encarregadoOverlayEl.addEventListener("click", (event) => {
+            if (event.target === encarregadoOverlayEl) fecharEncarregadoForm();
+          });
+          document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && encarregadoOverlayEl.classList.contains("aberto")) fecharEncarregadoForm();
+          });
 
-          encarregadoDialog.querySelectorAll(".copy-field-btn").forEach((btn) => {
+          encarregadoOverlayEl.querySelectorAll(".copy-field-btn").forEach((btn) => {
             btn.addEventListener("click", () => {
               const input = document.getElementById(btn.dataset.target);
               if (input?.value) navigator.clipboard?.writeText(input.value).catch(() => {});
@@ -587,7 +601,7 @@
                 const novo = await EncarregadosService.create(payload);
                 await EncarregadosService.linkToAluno(alunoId, novo.id);
               }
-              encarregadoDialog.close();
+              fecharEncarregadoForm();
               await recarregarEncarregados();
             } catch (err) {
               console.error(err);
