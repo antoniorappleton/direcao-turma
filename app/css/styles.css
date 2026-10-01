@@ -1840,3 +1840,91 @@ body.dt-workspace main.app-container {
     border-bottom: 0;
   }
 }
+
+.edit-dialog {
+  width: min(420px, calc(100vw - 32px));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
+}
+
+.edit-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.badge-neutral {
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid rgba(37, 99, 235, 0.15);
+}
+
+.dt-input-with-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dt-input-with-action .form-control {
+  flex: 1;
+}
+
+.dt-checkbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+.dt-checkbox-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: normal;
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+.dt-checkbox-row input[type="checkbox"] {
+  width: auto;
+}
+
+.dt-encarregado-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.dt-encarregado-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0;
+}
+
+.dt-contact-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.dt-contact-chip .icon-btn {
+  width: 22px;
+  height: 22px;
+}
+
+.dt-encarregado-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.dt-encarregado-notas {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+}
