@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Aluno — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.4" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.5" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -368,6 +368,14 @@
         </div>
 
         <div class="form-group">
+          <label>Neste aluno</label>
+          <div class="dt-checkbox-row">
+            <label><input type="checkbox" id="encarregadoPrincipal" /> Contacto principal</label>
+            <label><input type="checkbox" id="encarregadoResponsavelLegal" /> Responsável legal</label>
+          </div>
+        </div>
+
+        <div class="form-group">
           <label>Estado</label>
           <div class="dt-checkbox-row">
             <label><input type="checkbox" id="encarregadoCasado" /> Casado</label>
@@ -393,7 +401,7 @@
     </div>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.4
+      made by antonio.appleton | Departamento de Programação · v1.1.5
     </footer>
 
     <script>
@@ -543,6 +551,8 @@
             document.getElementById("encarregadoNome").value = encarregado?.nome || "";
             document.getElementById("encarregadoEmail").value = encarregado?.email || "";
             document.getElementById("encarregadoTelefone").value = encarregado?.telefone || "";
+            document.getElementById("encarregadoPrincipal").checked = !!encarregado?.principal;
+            document.getElementById("encarregadoResponsavelLegal").checked = !!encarregado?.responsavel_legal;
             document.getElementById("encarregadoCasado").checked = !!encarregado?.casado;
             document.getElementById("encarregadoDivorciado").checked = !!encarregado?.divorciado;
             document.getElementById("encarregadoEmpregado").checked = !!encarregado?.empregado;
@@ -588,6 +598,8 @@
               desempregado: document.getElementById("encarregadoDesempregado").checked,
               notas: document.getElementById("encarregadoNotas").value.trim() || null,
             };
+            const principal = document.getElementById("encarregadoPrincipal").checked;
+            const responsavelLegal = document.getElementById("encarregadoResponsavelLegal").checked;
             const submitBtn = encarregadoFormEl.querySelector("button[type=submit]");
             if (submitBtn) {
               submitBtn.disabled = true;
@@ -597,9 +609,10 @@
               const existingId = encarregadoFormEl.dataset.id;
               if (existingId) {
                 await EncarregadosService.update(existingId, payload);
+                await EncarregadosService.updateLink(alunoId, existingId, { principal, responsavelLegal });
               } else {
                 const novo = await EncarregadosService.create(payload);
-                await EncarregadosService.linkToAluno(alunoId, novo.id);
+                await EncarregadosService.linkToAluno(alunoId, novo.id, { principal, responsavelLegal });
               }
               fecharEncarregadoForm();
               await recarregarEncarregados();
@@ -1119,7 +1132,26 @@
       })();
 
       if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("service-worker.js").catch(console.error);
+        navigator.serviceWorker
+          .register("service-worker.js")
+          .then((reg) => {
+            if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+            reg.addEventListener("updatefound", () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener("statechange", () => {
+                if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                  newWorker.postMessage({ type: "SKIP_WAITING" });
+                }
+              });
+            });
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+              if (refreshing) return;
+              refreshing = true;
+              window.location.reload();
+            });
+          })
+          .catch(console.error);
       }
     </script>
   </body>
