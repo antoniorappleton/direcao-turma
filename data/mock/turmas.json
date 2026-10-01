@@ -2,17 +2,241 @@
   {
     "id": "mock-turma-1",
     "nome": "A",
-    "ano": 9,
-    "ciclo": "3º Ciclo",
-    "diretor_turma": "João Pedro Marques Sobral",
-    "total_alunos": 33
+    "ano": 5,
+    "ciclo": "2º Ciclo",
+    "diretor_turma": "Mariana Pereira Alho Da Silva Ramalho Sobral",
+    "total_alunos": 24
   },
   {
     "id": "mock-turma-2",
     "nome": "B",
+    "ano": 5,
+    "ciclo": "2º Ciclo",
+    "diretor_turma": "David Miguel Teixeira De Oliveira",
+    "total_alunos": 23
+  },
+  {
+    "id": "mock-turma-3",
+    "nome": "C",
+    "ano": 5,
+    "ciclo": "2º Ciclo",
+    "diretor_turma": "Sara Filipa Infante Gaspar Chambel Leitão",
+    "total_alunos": 25
+  },
+  {
+    "id": "mock-turma-4",
+    "nome": "A",
+    "ano": 6,
+    "ciclo": "2º Ciclo",
+    "diretor_turma": "Jorge Manuel Rodrigues Morais Varandas Fernandes",
+    "total_alunos": 24
+  },
+  {
+    "id": "mock-turma-5",
+    "nome": "B",
+    "ano": 6,
+    "ciclo": "2º Ciclo",
+    "diretor_turma": "Xavier Calvão Mestre",
+    "total_alunos": 26
+  },
+  {
+    "id": "mock-turma-6",
+    "nome": "C",
+    "ano": 6,
+    "ciclo": "2º Ciclo",
+    "diretor_turma": "Margarida Da Silva Marques",
+    "total_alunos": 27
+  },
+  {
+    "id": "mock-turma-7",
+    "nome": "A",
+    "ano": 7,
+    "ciclo": "3º Ciclo",
+    "diretor_turma": "Mariana Da Silva Fontes",
+    "total_alunos": 21
+  },
+  {
+    "id": "mock-turma-8",
+    "nome": "B",
+    "ano": 7,
+    "ciclo": "3º Ciclo",
+    "diretor_turma": "Fernando Tiago Rosa Franco Frazão Marques Da Silva",
+    "total_alunos": 22
+  },
+  {
+    "id": "mock-turma-9",
+    "nome": "C",
+    "ano": 7,
+    "ciclo": "3º Ciclo",
+    "diretor_turma": "Diogo Nuno Martins De Brito Alves Moreira",
+    "total_alunos": 24
+  },
+  {
+    "id": "mock-turma-10",
+    "nome": "A",
+    "ano": 8,
+    "ciclo": "3º Ciclo",
+    "diretor_turma": "Ana Rita Zuzarte Reis Gomes Nunes Ribeiro",
+    "total_alunos": 25
+  },
+  {
+    "id": "mock-turma-11",
+    "nome": "B",
+    "ano": 8,
+    "ciclo": "3º Ciclo",
+    "diretor_turma": "Maria Da Luz Tinoco Alpoim Barbosa",
+    "total_alunos": 20
+  },
+  {
+    "id": "mock-turma-12",
+    "nome": "C",
+    "ano": 8,
+    "ciclo": "3º Ciclo",
+    "diretor_turma": "João Francisco Dos Santos Neto Mariano",
+    "total_alunos": 24
+  },
+  {
+    "id": "mock-turma-13",
+    "nome": "A",
     "ano": 9,
     "ciclo": "3º Ciclo",
     "diretor_turma": "Carolina Antunes Borges",
+    "total_alunos": 33
+  },
+  {
+    "id": "mock-turma-14",
+    "nome": "B",
+    "ano": 9,
+    "ciclo": "3º Ciclo",
+    "diretor_turma": "João Pedro Marques Sobral",
     "total_alunos": 31
+  },
+  {
+    "id": "mock-turma-15",
+    "nome": "A",
+    "ano": 10,
+    "ciclo": "Ciências e Tecnologias",
+    "diretor_turma": "Sara Raquel Lopes De Lira",
+    "total_alunos": 22
+  },
+  {
+    "id": "mock-turma-16",
+    "nome": "B",
+    "ano": 10,
+    "ciclo": "Ciências e Tecnologias",
+    "diretor_turma": "Concha Cal Reynolds De Sousa",
+    "total_alunos": 23
+  },
+  {
+    "id": "mock-turma-17",
+    "nome": "C",
+    "ano": 10,
+    "ciclo": "Ciências e Tecnologias",
+    "diretor_turma": "Carlos Manuel Costa Domingos",
+    "total_alunos": 19
+  },
+  {
+    "id": "mock-turma-18",
+    "nome": "A",
+    "ano": 11,
+    "ciclo": "Ciências e Tecnologias",
+    "diretor_turma": "Carla Alexandra dos Reis da Silva Saldanha",
+    "total_alunos": 15
+  },
+  {
+    "id": "mock-turma-19",
+    "nome": "B",
+    "ano": 11,
+    "ciclo": "Ciências e Tecnologias",
+    "diretor_turma": "Inês Ribeiro Garcia De Paiva Couceiro",
+    "total_alunos": 18
+  },
+  {
+    "id": "mock-turma-20",
+    "nome": "C",
+    "ano": 11,
+    "ciclo": "Ciências e Tecnologias",
+    "diretor_turma": "Susana Duarte de Santos Viola",
+    "total_alunos": 17
+  },
+  {
+    "id": "mock-turma-21",
+    "nome": "A",
+    "ano": 12,
+    "ciclo": "Ciências e Tecnologias",
+    "diretor_turma": "Francisco Salgado Machado De Oliveira E Maia",
+    "total_alunos": 24
+  },
+  {
+    "id": "mock-turma-22",
+    "nome": "B",
+    "ano": 12,
+    "ciclo": "Ciências e Tecnologias",
+    "diretor_turma": "Margarida Maria Dias Nobre Bábau",
+    "total_alunos": 23
+  },
+  {
+    "id": "mock-turma-23",
+    "nome": "A1",
+    "ano": 10,
+    "ciclo": "R25 - Curso de Técnico de Informática Sistemas",
+    "diretor_turma": "António Maria Rivotti Maggiorani Appleton",
+    "total_alunos": 4
+  },
+  {
+    "id": "mock-turma-24",
+    "nome": "B1",
+    "ano": 10,
+    "ciclo": "R25 - Curso de Técnico de Informática Sistemas",
+    "diretor_turma": "António Maria Rivotti Maggiorani Appleton",
+    "total_alunos": 2
+  },
+  {
+    "id": "mock-turma-25",
+    "nome": "C1",
+    "ano": 10,
+    "ciclo": "R25 - Curso de Técnico de Informática Sistemas",
+    "diretor_turma": "António Maria Rivotti Maggiorani Appleton",
+    "total_alunos": 3
+  },
+  {
+    "id": "mock-turma-26",
+    "nome": "A1",
+    "ano": 11,
+    "ciclo": "R25 - Curso de Técnico de Informática Sistemas",
+    "diretor_turma": "David Amaro Pereira Teixeira",
+    "total_alunos": 9
+  },
+  {
+    "id": "mock-turma-27",
+    "nome": "B1",
+    "ano": 11,
+    "ciclo": "R25 - Curso de Técnico de Informática Sistemas",
+    "diretor_turma": "David Amaro Pereira Teixeira",
+    "total_alunos": 7
+  },
+  {
+    "id": "mock-turma-28",
+    "nome": "C1",
+    "ano": 11,
+    "ciclo": "R25 - Curso de Técnico de Informática Sistemas",
+    "diretor_turma": "David Amaro Pereira Teixeira",
+    "total_alunos": 3
+  },
+  {
+    "id": "mock-turma-29",
+    "nome": "A1",
+    "ano": 12,
+    "ciclo": "R25 - Curso de Técnico de Informática Sistemas",
+    "diretor_turma": "Sofia Silva Lopes Nogueira Cabral Antunes Oliveira",
+    "total_alunos": 8
+  },
+  {
+    "id": "mock-turma-30",
+    "nome": "B1",
+    "ano": 12,
+    "ciclo": "R25 - Curso de Técnico de Informática Sistemas",
+    "diretor_turma": "Sofia Silva Lopes Nogueira Cabral Antunes Oliveira",
+    "total_alunos": 9
   }
 ]
