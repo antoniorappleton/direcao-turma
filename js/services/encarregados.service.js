@@ -39,4 +39,16 @@ const EncarregadosService = {
     ]);
     if (error) throw error;
   },
+
+  async updateLink(alunoId, encarregadoId, { principal, responsavelLegal } = {}) {
+    const payload = {};
+    if (principal !== undefined) payload.principal = principal;
+    if (responsavelLegal !== undefined) payload.responsavel_legal = responsavelLegal;
+    const { error } = await window.supabase
+      .from("aluno_encarregados")
+      .update(payload)
+      .eq("aluno_id", alunoId)
+      .eq("encarregado_id", encarregadoId);
+    if (error) throw error;
+  },
 };
