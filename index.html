@@ -118,6 +118,8 @@
         if (!session) return;
 
         const professor = await getCurrentProfessor();
+        if (guardMustChangePassword(professor)) return;
+
         const welcomeEl = document.getElementById("welcomeMsg");
         if (welcomeEl && professor) {
           welcomeEl.textContent = `Olá, ${professor.nome || professor.email}`;
@@ -154,15 +156,14 @@
         try {
           const todasTurmas = await TurmasService.getAll();
 
-          let minhasTurmaIds;
-          if (isAdmin(professor)) {
-            minhasTurmaIds = todasTurmas.map((t) => t.id);
-          } else {
-            minhasTurmaIds = await ProfessorTurmasService.getIdsByProfessor(professor.id);
-            if (!minhasTurmaIds.length) {
-              window.location.href = "minhas-turmas.html?primeira=1";
-              return;
-            }
+          // "As minhas turmas" é sempre a seleção do próprio em
+          // professor_turmas (ver minhas-turmas.html) — também para admins:
+          // isAdmin só dá acesso a QUALQUER turma (canAccessTurma) e à opção
+          // de ver todas abaixo, não substitui a seleção pessoal por tudo.
+          const minhasTurmaIds = await ProfessorTurmasService.getIdsByProfessor(professor.id);
+          if (!minhasTurmaIds.length && !isAdmin(professor)) {
+            window.location.href = "minhas-turmas.html?primeira=1";
+            return;
           }
           const minhasTurmas = todasTurmas.filter((t) => minhasTurmaIds.includes(t.id));
           document.getElementById("metricTurmas").textContent = minhasTurmas.length;

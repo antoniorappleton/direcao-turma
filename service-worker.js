@@ -1,8 +1,9 @@
-const CACHE_NAME = "direcao-turma-v19";
+const CACHE_NAME = "direcao-turma-v20";
 const PRECACHE = [
   "./",
   "index.html",
   "login.html",
+  "mudar-password.html",
   "turma.html",
   "aluno.html",
   "minhas-turmas.html",
