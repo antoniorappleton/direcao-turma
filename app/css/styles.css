@@ -172,6 +172,9 @@ nav.nav-menu a.active {
   .pwa-install-label {
     display: none;
   }
+  .pwa-install-label {
+    display: none;
+  }
 }
 
 /* Main Layout */
