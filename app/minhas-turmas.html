@@ -76,6 +76,7 @@
             loadingEl.textContent = "Não foi possível identificar o professor.";
             return;
           }
+          if (guardMustChangePassword(professor)) return;
 
           if (primeiraVez) {
             document.getElementById("introMsg").textContent =
