@@ -119,8 +119,6 @@
         if (!session) return;
 
         const professor = await getCurrentProfessor();
-        if (guardMustChangePassword(professor)) return;
-
         const welcomeEl = document.getElementById("welcomeMsg");
         if (welcomeEl && professor) {
           welcomeEl.textContent = `Olá, ${professor.nome || professor.email}`;

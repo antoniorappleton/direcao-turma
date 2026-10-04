@@ -77,8 +77,6 @@
             loadingEl.textContent = "Não foi possível identificar o professor.";
             return;
           }
-          if (guardMustChangePassword(professor)) return;
-
           if (primeiraVez) {
             document.getElementById("introMsg").textContent =
               "Antes de começares: seleciona as turmas que lecionas. Só terás acesso a estas no painel DT — podes voltar aqui para atualizar a qualquer momento.";

@@ -40,16 +40,3 @@ async function getCurrentProfessor() {
   }
   return data;
 }
-
-// Passo 1 do onboarding (ver db/add_deve_mudar_password.sql): enquanto o
-// professor não tiver definido a sua própria password, todas as páginas
-// protegidas o reencaminham para lá em vez de mostrarem o seu conteúdo.
-// Devolve true quando reencaminhou — o chamador deve então `return` e não
-// continuar a renderizar a página.
-function guardMustChangePassword(professor, redirectTo = "mudar-password.html") {
-  if (professor?.deve_mudar_password) {
-    window.location.href = redirectTo;
-    return true;
-  }
-  return false;
-}
