@@ -131,7 +131,6 @@
         }
 
         const professor = await getCurrentProfessor();
-        if (guardMustChangePassword(professor)) return;
         const minhasTurmaIds = isAdmin(professor)
           ? null
           : await ProfessorTurmasService.getIdsByProfessor(professor.id);

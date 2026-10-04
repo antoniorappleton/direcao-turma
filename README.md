@@ -34,27 +34,21 @@ db/
 
 1. **Correr `db/schema.sql`** no SQL Editor do mesmo projeto Supabase do Scriptorium
    (`pllmyptwuvxryxfeufcm`). É seguro — só cria tabelas novas, não altera nada existente.
-2. **Correr `db/add_deve_mudar_password.sql`** no mesmo SQL Editor — acrescenta a coluna
-   e a função usadas pelo passo 1 do onboarding, abaixo.
-3. **Criar o repositório no GitHub** (ex: `direcao-turma`) e fazer push deste código.
-4. **Configurar GitHub Pages**: Settings → Pages → Source → branch `gh-pages` (criado
+2. **Criar o repositório no GitHub** (ex: `direcao-turma`) e fazer push deste código.
+3. **Configurar GitHub Pages**: Settings → Pages → Source → branch `gh-pages` (criado
    automaticamente pelo workflow no primeiro push).
-5. Testar login com uma conta já existente em `professores`.
+4. Testar login com uma conta já existente em `professores`.
 
-### Onboarding do professor (login)
+### Login do professor
 
-Ao entrar com `nome.apelido@colegio-ramalhao.com`, cada professor passa por dois passos
-obrigatórios antes de chegar ao painel:
+O login aceita emails `nome.apelido@colegio-ramalhao.com` e reutiliza o projeto Supabase
+partilhado com o Scriptorium. Na primeira entrada, a conta Auth e a respetiva linha em
+`professores` são criadas automaticamente usando a palavra-passe comum fornecida pela
+escola. Contas que já tenham uma palavra-passe própria continuam a poder entrar com ela;
+esta app não altera palavras-passe existentes.
 
-1. **Mudar a palavra-passe** (`mudar-password.html`) — a password por omissão de qualquer
-   professor é `[apelido],csj2026` (ver `app/js/core/auth.js`, `defaultPasswordFor`); só serve
-   para a primeira entrada, depois disso é obrigatório definir uma pessoal
-   (`professores.deve_mudar_password`).
-2. **Escolher as turmas** (`minhas-turmas.html`) — só depois de ter password própria é que é
-   reencaminhado para escolher as turmas de que é diretor/professor; só vê essas no painel DT.
-
-Contas que já existiam antes desta mudança (todas na antiga password partilhada) precisam de
-ser repostas uma vez para o novo padrão — ver `scripts/reset_teacher_passwords.ps1`.
+Depois do login, cada professor escolhe as turmas que leciona em `minhas-turmas.html`.
+Os registos existentes de autenticação não são redefinidos por este fluxo.
 
 ## O que falta (próximos passos)
 
