@@ -63,7 +63,8 @@
         try {
           const session = await getCurrentSession();
           if (session) {
-            window.location.replace("index.html");
+            const professor = await getCurrentProfessor();
+            window.location.href = professor?.deve_mudar_password ? "mudar-password.html" : "index.html";
             return;
           }
         } catch (e) {
@@ -78,10 +79,7 @@
             msg.innerHTML = "";
             return;
           }
-          const alert = document.createElement("div");
-          alert.className = `alert ${isError ? "alert-error" : "alert-success"}`;
-          alert.textContent = text;
-          msg.replaceChildren(alert);
+          msg.innerHTML = `<div class="alert ${isError ? "alert-error" : "alert-success"}">${text}</div>`;
         }
 
         form.addEventListener("submit", async (e) => {
@@ -93,16 +91,15 @@
           submitBtn.disabled = true;
           submitBtn.textContent = "A entrar…";
 
-          try {
-            const { error } = await signIn(email, password);
-            if (error) throw error;
-            window.location.replace("index.html");
-          } catch (error) {
-            console.error("Login da Direção de Turma falhou", error);
-            showMessage("Erro: " + (error.message || "Não foi possível iniciar sessão. Tenta novamente."));
+          const { error } = await signIn(email, password);
+          if (error) {
+            showMessage("Erro: " + error.message);
             submitBtn.disabled = false;
             submitBtn.textContent = "Entrar";
+            return;
           }
+          const professor = await getCurrentProfessor();
+          window.location.href = professor?.deve_mudar_password ? "mudar-password.html" : "index.html";
         });
 
         // Mostrar/ocultar password — mesmo padrão do Scriptorium.
