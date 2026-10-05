@@ -147,6 +147,8 @@
 
         document.getElementById("welcomeMsg").textContent = `${professor.nome || professor.email} · ${professor.email}`;
 
+        try {
+
         // --- Mudar palavra-passe -------------------------------------
         // Mesma lógica de app/mudar-password.html, sem a moldura de
         // "primeira entrada" (aqui é uma troca voluntária, não obrigatória).
@@ -310,6 +312,11 @@
 
         loadingEl.style.display = "none";
         document.getElementById("perfilContent").style.display = "block";
+        } catch (e) {
+          console.error(e);
+          loadingEl.textContent =
+            "Erro ao carregar o perfil. Se isto persistir, confirma se db/add_documentos_professor.sql já foi corrido no Supabase.";
+        }
       })();
 
       if ("serviceWorker" in navigator) {
