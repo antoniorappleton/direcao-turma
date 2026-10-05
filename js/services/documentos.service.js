@@ -24,6 +24,16 @@ const DocumentosService = {
     return data || [];
   },
 
+  async getByProfessor(professorId) {
+    const { data, error } = await window.supabase
+      .from("documentos")
+      .select("*, professores(nome)")
+      .eq("professor_id", professorId)
+      .order("criado_em", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
   async upload(file, path) {
     const { error } = await window.supabase.storage.from(DOCUMENTOS_BUCKET).upload(path, file);
     if (error) throw error;

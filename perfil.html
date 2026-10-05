@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Perfil — Direção de Turma</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.7" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="js/core/config.js"></script>
+    <script src="js/core/session.js"></script>
+    <script src="js/core/auth.js"></script>
+    <script src="js/core/permissions.js"></script>
+    <script src="js/utils/dates.js"></script>
+    <script src="js/services/documentos.service.js"></script>
+    <script src="js/pwa-install.js"></script>
+  </head>
+  <body class="dt-workspace">
+    <header class="app-header">
+      <a href="index.html" class="brand">
+        <img src="assets/logo.png" alt="Direção de Turma" class="brand-logo" />
+        <div class="brand-text">
+          <h1>DIREÇÃO DE TURMA</h1>
+          <div class="tag">Comunidade CSJ Ramalhão</div>
+        </div>
+      </a>
+      <nav class="nav-menu">
+        <a href="index.html">Painel DT</a>
+        <a href="minhas-turmas.html">As minhas turmas</a>
+        <a href="perfil.html" class="active">Perfil</a>
+        <button id="signOutBtn">Sair</button>
+      </nav>
+    </header>
+
+    <main class="app-container narrow-container">
+      <div id="loadingMsg" style="color: var(--text-muted); font-size: 14px">A carregar perfil...</div>
+      <div id="perfilContent" style="display: none">
+        <section class="dt-page-heading">
+          <div>
+            <div class="dt-eyebrow">Comunidade CSJ Ramalhão</div>
+            <h2>O meu perfil</h2>
+            <p id="welcomeMsg"></p>
+          </div>
+        </section>
+
+        <section class="dt-section">
+          <div class="dt-section-heading">
+            <div>
+              <div class="dt-eyebrow">Segurança</div>
+              <h2>Mudar palavra-passe</h2>
+            </div>
+          </div>
+
+          <form id="passwordForm">
+            <div class="form-group">
+              <label for="novaPassword">Nova palavra-passe</label>
+              <div class="input-with-icon">
+                <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M12 17a2 2 0 100-4 2 2 0 000 4zm6-7h-1V7a5 5 0 00-10 0v3H6a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2zM8 7a4 4 0 018 0v3H8V7z"
+                  />
+                </svg>
+                <input type="password" id="novaPassword" required minlength="8" class="form-control" placeholder="••••••••" />
+                <button type="button" id="toggleNovaPasswordBtn" class="input-action" aria-label="Mostrar palavra-passe">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 110-10 5 5 0 010 10z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="confirmarPassword">Confirmar nova palavra-passe</label>
+              <div class="input-with-icon">
+                <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M12 17a2 2 0 100-4 2 2 0 000 4zm6-7h-1V7a5 5 0 00-10 0v3H6a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2zM8 7a4 4 0 018 0v3H8V7z"
+                  />
+                </svg>
+                <input type="password" id="confirmarPassword" required minlength="8" class="form-control" placeholder="••••••••" />
+                <button type="button" id="toggleConfirmarPasswordBtn" class="input-action" aria-label="Mostrar palavra-passe">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 110-10 5 5 0 010 10z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div id="passwordMsg" style="margin-top: 12px"></div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top: 12px">Guardar nova palavra-passe</button>
+          </form>
+        </section>
+
+        <section class="dt-section dt-class-documents">
+          <div class="dt-section-heading">
+            <div>
+              <div class="dt-eyebrow">Horário</div>
+              <h2>O meu horário</h2>
+            </div>
+            <button id="toggleDocFormBtn" class="btn btn-secondary">+ Adicionar ficheiro</button>
+          </div>
+
+          <div id="docForm" style="display: none; margin-bottom: 16px">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="docTitulo">Título</label>
+                <input type="text" id="docTitulo" class="form-control" placeholder="Ex: Horário 2026/2027" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="docFicheiro">Ficheiro</label>
+              <input type="file" id="docFicheiro" class="form-control" />
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px">
+              <button id="guardarDocBtn" class="btn btn-primary">Carregar</button>
+              <button id="cancelarDocBtn" class="btn btn-secondary">Cancelar</button>
+            </div>
+            <div id="docMsg"></div>
+          </div>
+
+          <div id="docsList" class="dt-document-list"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
+      made by antonio.appleton | Departamento de Programação · v1.1.7
+    </footer>
+
+    <script>
+      (async () => {
+        const session = await requireSession("login.html");
+        if (!session) return;
+
+        document.getElementById("signOutBtn")?.addEventListener("click", signOut);
+
+        const loadingEl = document.getElementById("loadingMsg");
+        const professor = await getCurrentProfessor();
+        if (!professor) {
+          loadingEl.textContent = "Não foi possível identificar o professor.";
+          return;
+        }
+        if (guardMustChangePassword(professor)) return;
+
+        document.getElementById("welcomeMsg").textContent = `${professor.nome || professor.email} · ${professor.email}`;
+
+        // --- Mudar palavra-passe -------------------------------------
+        // Mesma lógica de app/mudar-password.html, sem a moldura de
+        // "primeira entrada" (aqui é uma troca voluntária, não obrigatória).
+        const EYE_SVG =
+          '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 110-10 5 5 0 010 10z"/><circle cx="12" cy="12" r="3"/></svg>';
+        const EYE_OFF_SVG =
+          '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 4.27L3.28 3 21 20.72 19.73 22 17.72 19.99C15.5 21.07 13.78 21.5 12 21.5 7 21.5 2.73 18.39 1 14c.66-1.52 1.6-2.91 2.73-4.03L2 4.27z"/></svg>';
+        function wireTogglePassword(buttonId, inputId) {
+          const btn = document.getElementById(buttonId);
+          const input = document.getElementById(inputId);
+          btn.addEventListener("click", () => {
+            if (input.type === "password") {
+              input.type = "text";
+              btn.innerHTML = EYE_OFF_SVG;
+              btn.setAttribute("aria-label", "Ocultar palavra-passe");
+            } else {
+              input.type = "password";
+              btn.innerHTML = EYE_SVG;
+              btn.setAttribute("aria-label", "Mostrar palavra-passe");
+            }
+          });
+        }
+        wireTogglePassword("toggleNovaPasswordBtn", "novaPassword");
+        wireTogglePassword("toggleConfirmarPasswordBtn", "confirmarPassword");
+
+        const passwordForm = document.getElementById("passwordForm");
+        const passwordMsg = document.getElementById("passwordMsg");
+
+        function showPasswordMessage(text, isError = true) {
+          passwordMsg.innerHTML = text ? `<div class="alert ${isError ? "alert-error" : "alert-success"}">${text}</div>` : "";
+        }
+
+        passwordForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          showPasswordMessage("");
+
+          const novaPassword = document.getElementById("novaPassword").value;
+          const confirmarPassword = document.getElementById("confirmarPassword").value;
+
+          if (novaPassword !== confirmarPassword) {
+            showPasswordMessage("As duas palavras-passe não coincidem.");
+            return;
+          }
+          if (novaPassword.length < 8) {
+            showPasswordMessage("A palavra-passe tem de ter pelo menos 8 caracteres.");
+            return;
+          }
+          if (novaPassword.toLowerCase() === defaultPasswordFor(professor.email).toLowerCase()) {
+            showPasswordMessage("Escolhe uma palavra-passe diferente da de omissão.");
+            return;
+          }
+
+          const submitBtn = passwordForm.querySelector("button[type=submit]");
+          submitBtn.disabled = true;
+          submitBtn.textContent = "A guardar…";
+
+          const { error: updateError } = await window.supabase.auth.updateUser({ password: novaPassword });
+          if (updateError) {
+            showPasswordMessage("Erro: " + updateError.message);
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Guardar nova palavra-passe";
+            return;
+          }
+
+          showPasswordMessage("Palavra-passe atualizada.", false);
+          passwordForm.reset();
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Guardar nova palavra-passe";
+        });
+
+        // --- O meu horário ---------------------------------------------
+        const docsListEl = document.getElementById("docsList");
+
+        function renderDocs(docs) {
+          docsListEl.innerHTML = docs.length
+            ? docs
+                .map(
+                  (d) => `
+                  <div class="admin-list-item" data-id="${d.id}" data-path="${d.ficheiro_path}">
+                    <div>
+                      <strong>${d.titulo}</strong>
+                      <span style="color: var(--text-muted); font-size: 12px; display: block">
+                        ${formatDate(d.criado_em)}
+                      </span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <button class="btn btn-secondary ver-doc-btn">Ver</button>
+                      <button class="icon-btn danger apagar-doc-btn" title="Apagar ficheiro">✕</button>
+                    </div>
+                  </div>`,
+                )
+                .join("")
+            : '<div class="admin-list-item" style="color: var(--text-muted)">Ainda não adicionaste nenhum ficheiro do horário.</div>';
+        }
+
+        async function carregarDocs() {
+          const docs = await DocumentosService.getByProfessor(professor.id);
+          renderDocs(docs);
+        }
+
+        await carregarDocs();
+
+        const docFormEl = document.getElementById("docForm");
+        const docMsgEl = document.getElementById("docMsg");
+
+        document.getElementById("toggleDocFormBtn").addEventListener("click", () => {
+          docFormEl.style.display = docFormEl.style.display === "none" ? "block" : "none";
+        });
+
+        document.getElementById("cancelarDocBtn").addEventListener("click", () => {
+          docFormEl.style.display = "none";
+        });
+
+        document.getElementById("guardarDocBtn").addEventListener("click", async () => {
+          const titulo = document.getElementById("docTitulo").value.trim();
+          const ficheiro = document.getElementById("docFicheiro").files[0];
+          if (!titulo || !ficheiro) {
+            docMsgEl.innerHTML = '<div class="alert alert-error">Título e ficheiro são obrigatórios.</div>';
+            return;
+          }
+          try {
+            const nomeFicheiro = ficheiro.name.replace(/\s+/g, "_");
+            const path = `professores/${professor.id}/${Date.now()}-${nomeFicheiro}`;
+            await DocumentosService.upload(ficheiro, path);
+            await DocumentosService.create({
+              titulo,
+              ficheiro_path: path,
+              professor_id: professor.id,
+              criado_por: professor.id,
+            });
+            document.getElementById("docTitulo").value = "";
+            document.getElementById("docFicheiro").value = "";
+            docMsgEl.innerHTML = "";
+            docFormEl.style.display = "none";
+            await carregarDocs();
+          } catch (err) {
+            console.error(err);
+            docMsgEl.innerHTML = '<div class="alert alert-error">Erro ao carregar ficheiro.</div>';
+          }
+        });
+
+        docsListEl.addEventListener("click", async (event) => {
+          const item = event.target.closest(".admin-list-item[data-id]");
+          if (!item) return;
+          const { id, path } = item.dataset;
+
+          if (event.target.closest(".ver-doc-btn")) {
+            try {
+              const url = await DocumentosService.getSignedUrl(path);
+              window.open(url, "_blank");
+            } catch (err) {
+              console.error(err);
+              alert("Erro ao abrir ficheiro.");
+            }
+          } else if (event.target.closest(".apagar-doc-btn")) {
+            if (!confirm("Apagar este ficheiro?")) return;
+            await DocumentosService.delete(id, path);
+            await carregarDocs();
+          }
+        });
+
+        loadingEl.style.display = "none";
+        document.getElementById("perfilContent").style.display = "block";
+      })();
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("service-worker.js")
+          .then((reg) => {
+            if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+            reg.addEventListener("updatefound", () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener("statechange", () => {
+                if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                  newWorker.postMessage({ type: "SKIP_WAITING" });
+                }
+              });
+            });
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+              if (refreshing) return;
+              refreshing = true;
+              window.location.reload();
+            });
+          })
+          .catch(console.error);
+      }
+    </script>
+  </body>
+</html>
