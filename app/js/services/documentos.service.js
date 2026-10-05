@@ -1,13 +1,20 @@
-// Camada de serviço — documentos (de aluno ou de turma), com upload/download
-// via Supabase Storage (bucket privado, acesso só por signed URL).
+// Camada de serviço — documentos (de aluno, turma ou professor), com
+// upload/download via Supabase Storage (bucket privado, acesso só por
+// signed URL).
 
 const DOCUMENTOS_BUCKET = "documentos-dt";
+
+// `documentos` tem duas FKs para `professores` (criado_por e professor_id,
+// esta desde db/add_documentos_professor.sql) — o embed tem de indicar qual
+// delas usar (professores!criado_por), senão o PostgREST recusa o pedido
+// por ambiguidade (erro PGRST201).
+const SELECT_COM_AUTOR = "*, professores!criado_por(nome)";
 
 const DocumentosService = {
   async getByAluno(alunoId) {
     const { data, error } = await window.supabase
       .from("documentos")
-      .select("*, professores(nome)")
+      .select(SELECT_COM_AUTOR)
       .eq("aluno_id", alunoId)
       .order("criado_em", { ascending: false });
     if (error) throw error;
@@ -17,7 +24,7 @@ const DocumentosService = {
   async getByTurma(turmaId) {
     const { data, error } = await window.supabase
       .from("documentos")
-      .select("*, professores(nome)")
+      .select(SELECT_COM_AUTOR)
       .eq("turma_id", turmaId)
       .order("criado_em", { ascending: false });
     if (error) throw error;
@@ -27,7 +34,7 @@ const DocumentosService = {
   async getByProfessor(professorId) {
     const { data, error } = await window.supabase
       .from("documentos")
-      .select("*, professores(nome)")
+      .select(SELECT_COM_AUTOR)
       .eq("professor_id", professorId)
       .order("criado_em", { ascending: false });
     if (error) throw error;
