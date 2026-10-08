@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Turma — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.10" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.11" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -285,7 +285,7 @@
     </div>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.10
+      made by antonio.appleton | Departamento de Programação · v1.1.11
     </footer>
 
     <script>
@@ -313,6 +313,16 @@
           if (!turma || !canAccessTurma(professor, turma, minhasTurmaIds || [])) {
             loadingEl.textContent = "Não tens acesso a esta turma.";
             return;
+          }
+
+          // Só o DT desta turma (ou admin) vê Documentos — um professor só
+          // de uma disciplina vê Alunos + Avaliações, nada mais (ver
+          // db/add_acesso_dt_vs_professor.sql, que aplica a mesma regra a
+          // sério no RLS).
+          const veTudo = isDTouAdmin(professor, turma);
+          if (!veTudo) {
+            document.querySelector('.dt-section-nav a[href="#documentos"]')?.remove();
+            document.getElementById("documentos")?.remove();
           }
 
           document.getElementById("turmaTitulo").textContent = `${turma.nome} (${turma.ano}º ano)`;
@@ -381,68 +391,70 @@
             renderDocs(docs);
           }
 
-          await carregarDocs();
+          if (veTudo) {
+            await carregarDocs();
 
-          const docFormEl = document.getElementById("docForm");
-          const docMsgEl = document.getElementById("docMsg");
+            const docFormEl = document.getElementById("docForm");
+            const docMsgEl = document.getElementById("docMsg");
 
-          document.getElementById("toggleDocFormBtn").addEventListener("click", () => {
-            docFormEl.style.display = docFormEl.style.display === "none" ? "block" : "none";
-          });
+            document.getElementById("toggleDocFormBtn").addEventListener("click", () => {
+              docFormEl.style.display = docFormEl.style.display === "none" ? "block" : "none";
+            });
 
-          document.getElementById("cancelarDocBtn").addEventListener("click", () => {
-            docFormEl.style.display = "none";
-          });
-
-          document.getElementById("guardarDocBtn").addEventListener("click", async () => {
-            const titulo = document.getElementById("docTitulo").value.trim();
-            const ficheiro = document.getElementById("docFicheiro").files[0];
-            if (!titulo || !ficheiro) {
-              docMsgEl.innerHTML = '<div class="alert alert-error">Título e ficheiro são obrigatórios.</div>';
-              return;
-            }
-            try {
-              const nomeFicheiro = ficheiro.name.replace(/\s+/g, "_");
-              const path = `turmas/${turmaId}/${Date.now()}-${nomeFicheiro}`;
-              await DocumentosService.upload(ficheiro, path);
-              await DocumentosService.create({
-                titulo,
-                categoria: document.getElementById("docCategoria").value.trim() || null,
-                ficheiro_path: path,
-                turma_id: turmaId,
-                criado_por: professor?.id || null,
-              });
-              document.getElementById("docTitulo").value = "";
-              document.getElementById("docCategoria").value = "";
-              document.getElementById("docFicheiro").value = "";
-              docMsgEl.innerHTML = "";
+            document.getElementById("cancelarDocBtn").addEventListener("click", () => {
               docFormEl.style.display = "none";
-              await carregarDocs();
-            } catch (err) {
-              console.error(err);
-              docMsgEl.innerHTML = '<div class="alert alert-error">Erro ao carregar documento.</div>';
-            }
-          });
+            });
 
-          docsListEl.addEventListener("click", async (event) => {
-            const item = event.target.closest(".admin-list-item[data-id]");
-            if (!item) return;
-            const { id, path } = item.dataset;
-
-            if (event.target.closest(".ver-doc-btn")) {
+            document.getElementById("guardarDocBtn").addEventListener("click", async () => {
+              const titulo = document.getElementById("docTitulo").value.trim();
+              const ficheiro = document.getElementById("docFicheiro").files[0];
+              if (!titulo || !ficheiro) {
+                docMsgEl.innerHTML = '<div class="alert alert-error">Título e ficheiro são obrigatórios.</div>';
+                return;
+              }
               try {
-                const url = await DocumentosService.getSignedUrl(path);
-                window.open(url, "_blank");
+                const nomeFicheiro = ficheiro.name.replace(/\s+/g, "_");
+                const path = `turmas/${turmaId}/${Date.now()}-${nomeFicheiro}`;
+                await DocumentosService.upload(ficheiro, path);
+                await DocumentosService.create({
+                  titulo,
+                  categoria: document.getElementById("docCategoria").value.trim() || null,
+                  ficheiro_path: path,
+                  turma_id: turmaId,
+                  criado_por: professor?.id || null,
+                });
+                document.getElementById("docTitulo").value = "";
+                document.getElementById("docCategoria").value = "";
+                document.getElementById("docFicheiro").value = "";
+                docMsgEl.innerHTML = "";
+                docFormEl.style.display = "none";
+                await carregarDocs();
               } catch (err) {
                 console.error(err);
-                alert("Erro ao abrir documento.");
+                docMsgEl.innerHTML = '<div class="alert alert-error">Erro ao carregar documento.</div>';
               }
-            } else if (event.target.closest(".apagar-doc-btn")) {
-              if (!confirm("Apagar este documento?")) return;
-              await DocumentosService.delete(id, path);
-              await carregarDocs();
-            }
-          });
+            });
+
+            docsListEl.addEventListener("click", async (event) => {
+              const item = event.target.closest(".admin-list-item[data-id]");
+              if (!item) return;
+              const { id, path } = item.dataset;
+
+              if (event.target.closest(".ver-doc-btn")) {
+                try {
+                  const url = await DocumentosService.getSignedUrl(path);
+                  window.open(url, "_blank");
+                } catch (err) {
+                  console.error(err);
+                  alert("Erro ao abrir documento.");
+                }
+              } else if (event.target.closest(".apagar-doc-btn")) {
+                if (!confirm("Apagar este documento?")) return;
+                await DocumentosService.delete(id, path);
+                await carregarDocs();
+              }
+            });
+          }
 
           // --- Avaliações -------------------------------------------------
           const TIPO_LABELS = {

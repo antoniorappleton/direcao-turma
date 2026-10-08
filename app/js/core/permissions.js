@@ -32,3 +32,14 @@ function isDiretorDaTurma(professor, turma) {
 function canAccessTurma(professor, turma, minhasTurmaIds = []) {
   return isAdmin(professor) || minhasTurmaIds.includes(turma.id);
 }
+
+// Quem vê tudo sobre o aluno (encarregados, acompanhamento, reuniões,
+// documentos, ocorrências, histórico) — admin ou o DT desta turma. Um
+// professor só de uma disciplina (não-DT) continua a aceder à turma/aluno
+// (canAccessTurma), mas só vê Avaliações — ver turma.html/aluno.html, que
+// escondem o resto quando isto dá false. Reflete no cliente a mesma regra
+// aplicada a sério no RLS em db/add_acesso_dt_vs_professor.sql
+// (is_current_user_dt_da_turma / is_current_user_dt_do_aluno).
+function isDTouAdmin(professor, turma) {
+  return isAdmin(professor) || isDiretorDaTurma(professor, turma);
+}
