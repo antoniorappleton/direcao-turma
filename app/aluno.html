@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Aluno — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.7" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.9" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -18,6 +18,7 @@
     <script src="js/services/encarregados.service.js"></script>
     <script src="js/services/registos.service.js"></script>
     <script src="js/services/documentos.service.js"></script>
+    <script src="js/services/avaliacoes.service.js"></script>
     <script src="js/services/reunioes.service.js"></script>
     <script src="js/services/scriptorium.service.js"></script>
     <script src="js/pwa-install.js"></script>
@@ -76,6 +77,7 @@
           <a href="#acompanhamento">Acompanhamento</a>
           <a href="#reunioes">Reuniões</a>
           <a href="#documentos">Documentos</a>
+          <a href="#avaliacoes" id="navAvaliacoesAluno">Avaliações</a>
           <a href="#ocorrencias-scriptorium">Ocorrências</a>
           <a href="#historico">Histórico escolar</a>
         </nav>
@@ -416,8 +418,151 @@
       </div>
     </div>
 
+    <div id="avaliacoesOverlay" class="dt-modal-overlay">
+      <div class="dt-modal dt-modal--full" role="dialog" aria-modal="true" aria-labelledby="avaliacoesTitle">
+        <div class="dt-aval-header">
+          <div>
+            <div class="dt-eyebrow">Avaliações</div>
+            <h2 id="avaliacoesTitle" style="margin: 2px 0 0">Avaliações</h2>
+          </div>
+          <div class="dt-aval-header-actions">
+            <button id="addAvaliacaoBtn" class="btn btn-primary">+ Registar avaliação</button>
+            <button id="closeAvaliacoesBtn" class="icon-btn" title="Fechar" aria-label="Fechar">✕</button>
+          </div>
+        </div>
+
+        <div class="dt-aval-body">
+          <div class="dt-aval-toolbar">
+            <div class="form-group">
+              <label for="avalFiltroDisciplina">Disciplina</label>
+              <select id="avalFiltroDisciplina" class="form-control">
+                <option value="">Todas as disciplinas</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="avalFiltroPeriodo">Período</label>
+              <select id="avalFiltroPeriodo" class="form-control">
+                <option value="">Todos os períodos</option>
+                <option value="1">1.º Período</option>
+                <option value="2">2.º Período</option>
+                <option value="3">3.º Período</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="dt-student-summary dt-aval-summary">
+            <div class="dt-summary-fact"><span>Média</span><strong id="avalResumoMedia">—</strong></div>
+            <div class="dt-summary-fact"><span>Avaliações</span><strong id="avalResumoCount">0</strong></div>
+            <div class="dt-summary-fact"><span>Positivas</span><strong id="avalResumoPositivas">0</strong></div>
+            <div class="dt-summary-fact"><span>Negativas</span><strong id="avalResumoNegativas">0</strong></div>
+          </div>
+
+          <nav class="dt-aval-tabs">
+            <button type="button" class="ativo" data-view="lista">Avaliações</button>
+            <button type="button" data-view="evolucao">Evolução</button>
+          </nav>
+
+          <section id="avalViewLista" class="dt-aval-view ativo">
+            <div id="avaliacoesList" class="admin-list-container" style="max-height: none"></div>
+          </section>
+
+          <section id="avalViewEvolucao" class="dt-aval-view">
+            <table class="dt-aval-grid">
+              <thead>
+                <tr>
+                  <th>Disciplina</th>
+                  <th>1.º Período</th>
+                  <th>2.º Período</th>
+                  <th>3.º Período</th>
+                </tr>
+              </thead>
+              <tbody id="evolucaoTableBody"></tbody>
+            </table>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div id="avaliacaoFormOverlay" class="dt-modal-overlay">
+      <div class="dt-modal" role="dialog" aria-modal="true" aria-labelledby="avaliacaoFormTitle">
+        <form id="avaliacaoForm">
+          <h3 class="app-card-title" id="avaliacaoFormTitle" style="margin-bottom: 16px">Nova avaliação</h3>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="avalDisciplina">Disciplina</label>
+              <input type="text" id="avalDisciplina" class="form-control" list="avalDisciplinasList" required placeholder="Ex: Matemática A" />
+              <datalist id="avalDisciplinasList"></datalist>
+            </div>
+            <div class="form-group">
+              <label for="avalPeriodoForm">Período</label>
+              <select id="avalPeriodoForm" class="form-control" required>
+                <option value="1">1.º Período</option>
+                <option value="2">2.º Período</option>
+                <option value="3">3.º Período</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="avalData">Data</label>
+              <input type="date" id="avalData" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label for="avalTipo">Tipo</label>
+              <select id="avalTipo" class="form-control" required>
+                <option value="teste">Teste</option>
+                <option value="questao_aula">Questão Aula</option>
+                <option value="trabalho">Trabalho</option>
+                <option value="apresentacao">Apresentação</option>
+                <option value="oralidade">Oralidade</option>
+                <option value="projeto">Projeto</option>
+                <option value="ficha">Ficha</option>
+                <option value="intercalar" id="avalTipoIntercalarOpt">Avaliação Intercalar</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="avalTitulo">Designação</label>
+            <input type="text" id="avalTitulo" class="form-control" required placeholder="Ex: Teste de Funções" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="avalNota">Classificação</label>
+              <input type="number" id="avalNota" class="form-control" step="0.1" required />
+            </div>
+            <div class="form-group">
+              <label for="avalEscala">Escala</label>
+              <input type="text" id="avalEscala" class="form-control" value="0-20" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="avalPeso">Peso % (opcional)</label>
+            <input type="number" id="avalPeso" class="form-control" step="1" min="0" max="100" />
+          </div>
+
+          <div class="form-group">
+            <label for="avalObservacao">Observação (opcional)</label>
+            <textarea id="avalObservacao" class="form-control" rows="3"></textarea>
+          </div>
+
+          <div id="avalFormMsg"></div>
+
+          <div style="display: flex; gap: 8px; margin-top: 8px">
+            <button type="submit" class="btn btn-primary">Guardar avaliação</button>
+            <button type="button" id="cancelarAvalBtn" class="btn btn-secondary">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.7
+      made by antonio.appleton | Departamento de Programação · v1.1.9
     </footer>
 
     <script>
@@ -902,6 +1047,253 @@
               await carregarDocs();
             }
           });
+
+          // --- Avaliações (vista de um único aluno) ------------------------
+          const AVAL_TIPO_LABELS = {
+            teste: "Teste",
+            questao_aula: "Questão Aula",
+            trabalho: "Trabalho",
+            apresentacao: "Apresentação",
+            oralidade: "Oralidade",
+            projeto: "Projeto",
+            ficha: "Ficha",
+            intercalar: "Avaliação Intercalar",
+            outro: "Outro",
+          };
+
+          function formatNota(n) {
+            return Number.isFinite(n) ? n.toFixed(1).replace(".", ",") : "—";
+          }
+
+          function isEscala20(a) {
+            return a.escala === "0-20" && typeof a.nota === "number";
+          }
+
+          function media(valores) {
+            if (!valores.length) return null;
+            return valores.reduce((soma, v) => soma + v, 0) / valores.length;
+          }
+
+          const navAvaliacoesEl = document.getElementById("navAvaliacoesAluno");
+
+          if (!turma) {
+            // Sem turma atribuída não há turma_id para gravar a avaliação —
+            // esconder em vez de abrir um popup que vai falhar sempre.
+            navAvaliacoesEl.style.display = "none";
+          } else {
+            let avaliacoes = [];
+            let avaliacoesCarregadas = false;
+
+            const avaliacoesOverlayEl = document.getElementById("avaliacoesOverlay");
+            const avaliacaoFormOverlayEl = document.getElementById("avaliacaoFormOverlay");
+            const avalFiltroDisciplinaEl = document.getElementById("avalFiltroDisciplina");
+            const avalFiltroPeriodoEl = document.getElementById("avalFiltroPeriodo");
+            const avalDisciplinasListEl = document.getElementById("avalDisciplinasList");
+            const avalPeriodoFormEl = document.getElementById("avalPeriodoForm");
+            const avalTipoEl = document.getElementById("avalTipo");
+            const avalTipoIntercalarOptEl = document.getElementById("avalTipoIntercalarOpt");
+            const avaliacoesListEl = document.getElementById("avaliacoesList");
+            const evolucaoTableBodyEl = document.getElementById("evolucaoTableBody");
+
+            async function carregarDisciplinasDatalist() {
+              const disciplinas = await AvaliacoesService.getDisciplinasDaTurma(turma.id);
+              avalDisciplinasListEl.innerHTML = disciplinas.map((d) => `<option value="${d}"></option>`).join("");
+              const atual = avalFiltroDisciplinaEl.value;
+              avalFiltroDisciplinaEl.innerHTML =
+                '<option value="">Todas as disciplinas</option>' +
+                disciplinas.map((d) => `<option value="${d}">${d}</option>`).join("");
+              avalFiltroDisciplinaEl.value = atual;
+            }
+
+            function filtrar(lista, { ignorarPeriodo = false } = {}) {
+              const disciplina = avalFiltroDisciplinaEl.value;
+              const periodo = avalFiltroPeriodoEl.value;
+              return lista.filter(
+                (a) =>
+                  (!disciplina || a.disciplina === disciplina) &&
+                  (ignorarPeriodo || !periodo || String(a.periodo) === periodo),
+              );
+            }
+
+            function renderResumo() {
+              const filtradas = filtrar(avaliacoes);
+              const notas20 = filtradas.filter(isEscala20).map((a) => a.nota);
+              const positivas = notas20.filter((n) => n >= 10).length;
+              const negativas = notas20.filter((n) => n < 10).length;
+              const m = media(notas20);
+              document.getElementById("avalResumoMedia").textContent = m === null ? "—" : formatNota(m);
+              document.getElementById("avalResumoCount").textContent = filtradas.length;
+              document.getElementById("avalResumoPositivas").textContent = positivas;
+              document.getElementById("avalResumoNegativas").textContent = negativas;
+            }
+
+            function renderLista() {
+              const filtradas = filtrar(avaliacoes);
+              avaliacoesListEl.innerHTML = filtradas.length
+                ? filtradas
+                    .map((a) => {
+                      const notaTxt = typeof a.nota === "number" ? `${formatNota(a.nota)} (${a.escala})` : "—";
+                      const badge = isEscala20(a)
+                        ? `<span class="badge ${a.nota >= 10 ? "badge-positiva" : "badge-negativa"}">${notaTxt}</span>`
+                        : `<span class="badge badge-neutral">${notaTxt}</span>`;
+                      return `
+                      <div class="admin-list-item" data-id="${a.id}">
+                        <div>
+                          <strong>${a.titulo}</strong>
+                          <span style="color: var(--text-muted); font-size: 12px; display: block">
+                            ${[formatDate(a.data), a.disciplina, AVAL_TIPO_LABELS[a.tipo] || a.tipo, `${a.periodo}.º Período`]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px">
+                          ${badge}
+                          <button class="icon-btn danger apagar-aval-btn" title="Apagar avaliação">✕</button>
+                        </div>
+                      </div>`;
+                    })
+                    .join("")
+                : '<div class="admin-list-item" style="color: var(--text-muted)">Sem avaliações registadas.</div>';
+            }
+
+            function renderEvolucao() {
+              const base = filtrar(avaliacoes, { ignorarPeriodo: true });
+              const porDisciplina = new Map();
+              base.forEach((a) => {
+                if (!porDisciplina.has(a.disciplina)) porDisciplina.set(a.disciplina, { 1: [], 2: [], 3: [] });
+                if (isEscala20(a)) porDisciplina.get(a.disciplina)[a.periodo].push(a.nota);
+              });
+              const linhas = Array.from(porDisciplina.entries()).sort((a, b) => a[0].localeCompare(b[0], "pt"));
+              evolucaoTableBodyEl.innerHTML = linhas.length
+                ? linhas
+                    .map(([disciplina, porPeriodo]) => {
+                      const cols = [1, 2, 3]
+                        .map((p) => {
+                          const m = media(porPeriodo[p]);
+                          return `<td>${m === null ? "—" : formatNota(m)}</td>`;
+                        })
+                        .join("");
+                      return `<tr><td>${disciplina}</td>${cols}</tr>`;
+                    })
+                    .join("")
+                : `<tr><td colspan="4" style="color: var(--text-muted)">Sem dados para mostrar.</td></tr>`;
+            }
+
+            function renderAvaliacoesTudo() {
+              renderResumo();
+              renderLista();
+              renderEvolucao();
+            }
+
+            async function carregarAvaliacoes() {
+              avaliacoes = await AvaliacoesService.getByAluno(alunoId);
+              await carregarDisciplinasDatalist();
+              renderAvaliacoesTudo();
+            }
+
+            function abrirAvaliacoesOverlay() {
+              avaliacoesOverlayEl.classList.add("aberto");
+              if (!avaliacoesCarregadas) {
+                avaliacoesCarregadas = true;
+                carregarAvaliacoes().catch((err) => {
+                  console.error(err);
+                  avaliacoesListEl.innerHTML = '<div class="admin-list-item" style="color: var(--text-muted)">Erro ao carregar avaliações.</div>';
+                });
+              }
+            }
+
+            function fecharAvaliacoesOverlay() {
+              avaliacoesOverlayEl.classList.remove("aberto");
+            }
+
+            navAvaliacoesEl.addEventListener("click", (event) => {
+              event.preventDefault();
+              abrirAvaliacoesOverlay();
+            });
+            document.getElementById("closeAvaliacoesBtn").addEventListener("click", fecharAvaliacoesOverlay);
+            avaliacoesOverlayEl.addEventListener("click", (event) => {
+              if (event.target === avaliacoesOverlayEl) fecharAvaliacoesOverlay();
+            });
+
+            document.querySelectorAll(".dt-aval-tabs button").forEach((btn) => {
+              btn.addEventListener("click", () => {
+                document.querySelectorAll(".dt-aval-tabs button").forEach((b) => b.classList.remove("ativo"));
+                btn.classList.add("ativo");
+                document.querySelectorAll(".dt-aval-view").forEach((v) => v.classList.remove("ativo"));
+                document.getElementById(`avalView${btn.dataset.view.charAt(0).toUpperCase()}${btn.dataset.view.slice(1)}`).classList.add("ativo");
+              });
+            });
+
+            [avalFiltroDisciplinaEl, avalFiltroPeriodoEl].forEach((el) => el.addEventListener("change", renderAvaliacoesTudo));
+
+            avaliacoesListEl.addEventListener("click", async (event) => {
+              const item = event.target.closest(".admin-list-item[data-id]");
+              if (!item || !event.target.closest(".apagar-aval-btn")) return;
+              if (!confirm("Apagar esta avaliação?")) return;
+              await AvaliacoesService.delete(item.dataset.id);
+              await carregarAvaliacoes();
+            });
+
+            function atualizarOpcaoIntercalar() {
+              const periodo = avalPeriodoFormEl.value;
+              const permitido = periodo === "1" || periodo === "2";
+              avalTipoIntercalarOptEl.disabled = !permitido;
+              if (!permitido && avalTipoEl.value === "intercalar") avalTipoEl.value = "teste";
+            }
+
+            avalPeriodoFormEl.addEventListener("change", atualizarOpcaoIntercalar);
+
+            function abrirAvaliacaoForm() {
+              document.getElementById("avaliacaoForm").reset();
+              document.getElementById("avalData").value = new Date().toISOString().slice(0, 10);
+              atualizarOpcaoIntercalar();
+              document.getElementById("avalFormMsg").innerHTML = "";
+              avaliacaoFormOverlayEl.classList.add("aberto");
+            }
+
+            function fecharAvaliacaoForm() {
+              avaliacaoFormOverlayEl.classList.remove("aberto");
+            }
+
+            document.getElementById("addAvaliacaoBtn").addEventListener("click", abrirAvaliacaoForm);
+            document.getElementById("cancelarAvalBtn").addEventListener("click", fecharAvaliacaoForm);
+            avaliacaoFormOverlayEl.addEventListener("click", (event) => {
+              if (event.target === avaliacaoFormOverlayEl) fecharAvaliacaoForm();
+            });
+            document.addEventListener("keydown", (event) => {
+              if (event.key !== "Escape") return;
+              if (avaliacaoFormOverlayEl.classList.contains("aberto")) fecharAvaliacaoForm();
+              else if (avaliacoesOverlayEl.classList.contains("aberto")) fecharAvaliacoesOverlay();
+            });
+
+            document.getElementById("avaliacaoForm").addEventListener("submit", async (event) => {
+              event.preventDefault();
+              const msgEl = document.getElementById("avalFormMsg");
+              const nota = parseFloat(document.getElementById("avalNota").value);
+              const payload = {
+                aluno_id: alunoId,
+                turma_id: turma.id,
+                disciplina: document.getElementById("avalDisciplina").value.trim(),
+                periodo: Number(avalPeriodoFormEl.value),
+                tipo: avalTipoEl.value,
+                titulo: document.getElementById("avalTitulo").value.trim(),
+                data: document.getElementById("avalData").value,
+                nota: Number.isFinite(nota) ? nota : null,
+                escala: document.getElementById("avalEscala").value.trim() || "0-20",
+                peso: document.getElementById("avalPeso").value ? Number(document.getElementById("avalPeso").value) : null,
+                observacao: document.getElementById("avalObservacao").value.trim() || null,
+                criado_por: professor?.id || null,
+              };
+              try {
+                await AvaliacoesService.create(payload);
+                fecharAvaliacaoForm();
+                await carregarAvaliacoes();
+              } catch (err) {
+                console.error(err);
+                msgEl.innerHTML = '<div class="alert alert-error">Erro ao guardar avaliação.</div>';
+              }
+            });
+          }
 
           const ESTADO_LABELS = {
             pedida: "Pedida",

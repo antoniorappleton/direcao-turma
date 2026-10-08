@@ -1871,6 +1871,130 @@ body.dt-workspace main.app-container {
   padding: 24px;
 }
 
+.dt-modal--full {
+  max-width: min(96vw, 1200px);
+  max-height: min(92vh, 900px);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.dt-aval-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px 0;
+}
+
+.dt-aval-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dt-aval-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px 24px;
+}
+
+.dt-aval-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.dt-aval-toolbar .form-group {
+  margin-bottom: 0;
+  min-width: 160px;
+}
+
+.dt-aval-summary {
+  margin-bottom: 20px;
+}
+
+.dt-aval-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--surface-border);
+  margin-bottom: 18px;
+}
+
+.dt-aval-tabs button {
+  padding: 8px 14px;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.dt-aval-tabs button.ativo {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.dt-aval-view {
+  display: none;
+}
+
+.dt-aval-view.ativo {
+  display: block;
+}
+
+.badge-positiva {
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid rgba(57, 123, 88, 0.2);
+}
+
+.badge-negativa {
+  background: var(--error-light);
+  color: var(--error);
+  border: 1px solid rgba(179, 79, 70, 0.2);
+}
+
+.dt-aval-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.dt-aval-grid th,
+.dt-aval-grid td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--surface-border);
+  text-align: left;
+}
+
+.dt-aval-grid th {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+@media (max-width: 720px) {
+  .dt-modal--full {
+    max-width: 100vw;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .dt-aval-grid {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
 .badge-neutral {
   background: var(--primary-light);
   color: var(--primary);
