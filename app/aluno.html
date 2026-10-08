@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Aluno — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.9" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.10" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -19,6 +19,7 @@
     <script src="js/services/registos.service.js"></script>
     <script src="js/services/documentos.service.js"></script>
     <script src="js/services/avaliacoes.service.js"></script>
+    <script src="js/services/historico-academico.service.js"></script>
     <script src="js/services/reunioes.service.js"></script>
     <script src="js/services/scriptorium.service.js"></script>
     <script src="js/pwa-install.js"></script>
@@ -340,6 +341,11 @@
               <div class="app-card-title"><span>Histórico de Matrículas</span></div>
               <div id="matriculasList" class="admin-list-container" style="max-height: none"></div>
             </div>
+
+            <div class="app-card dt-student-panel" id="historico-academico">
+              <div class="app-card-title"><span>Histórico Académico</span></div>
+              <div id="historicoAcademicoList"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -562,7 +568,7 @@
     </div>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.9
+      made by antonio.appleton | Departamento de Programação · v1.1.10
     </footer>
 
     <script>
@@ -810,6 +816,44 @@
                 )
                 .join("")
             : '<div class="admin-list-item" style="color: var(--text-muted)">Sem histórico de matrículas.</div>';
+
+          try {
+            const historicoAcademicoEl = document.getElementById("historicoAcademicoList");
+            const historico = await HistoricoAcademicoService.getByAluno(alunoId);
+            const porAno = new Map();
+            historico.forEach((h) => {
+              if (!porAno.has(h.ano_letivo)) porAno.set(h.ano_letivo, []);
+              porAno.get(h.ano_letivo).push(h);
+            });
+            historicoAcademicoEl.innerHTML = porAno.size
+              ? Array.from(porAno.entries())
+                  .map(([anoLetivo, linhas]) => {
+                    const primeira = linhas[0];
+                    const linhasOrdenadas = [...linhas].sort((a, b) => a.disciplina.localeCompare(b.disciplina, "pt"));
+                    return `
+                    <div class="dt-aval-summary" style="margin: 0 0 8px">
+                      <div class="dt-summary-fact"><span>Ano letivo</span><strong>${anoLetivo}</strong><small>${primeira.turma_nome || ""}${primeira.ano ? ` · ${primeira.ano}.º ano` : ""}</small></div>
+                      <div class="dt-summary-fact"><span>Média</span><strong>${primeira.media_geral != null ? String(primeira.media_geral).replace(".", ",") : "—"}</strong></div>
+                      <div class="dt-summary-fact"><span>Situação</span><strong>${primeira.averbamento || "—"}</strong></div>
+                      <div class="dt-summary-fact"><span>Fonte</span><small>${primeira.fonte || "—"}</small></div>
+                    </div>
+                    <table class="dt-aval-grid" style="margin-bottom: 20px">
+                      <thead><tr><th>Disciplina</th><th>Nota</th></tr></thead>
+                      <tbody>
+                        ${linhasOrdenadas
+                          .map((h) => `<tr><td>${h.disciplina}</td><td>${h.nota != null ? `${String(h.nota).replace(".", ",")} (${h.escala})` : "—"}</td></tr>`)
+                          .join("")}
+                      </tbody>
+                    </table>
+                    ${primeira.observacoes ? `<p style="color: var(--text-muted); font-size: 12px; margin: -12px 0 20px">${primeira.observacoes}</p>` : ""}`;
+                  })
+                  .join("")
+              : '<div class="admin-list-item" style="color: var(--text-muted)">Sem histórico académico de anos anteriores.</div>';
+          } catch (err) {
+            console.error("Erro ao carregar histórico académico", err);
+            document.getElementById("historicoAcademicoList").innerHTML =
+              '<div class="admin-list-item" style="color: var(--text-muted)">Erro ao carregar histórico académico.</div>';
+          }
 
           const TIPO_LABELS = {
             nota: "Nota",

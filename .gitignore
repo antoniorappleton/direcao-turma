@@ -1,2 +1,7 @@
 .env
 /.vscode/
+
+# Scripts SQL com dados pessoais reais de alunos (nomes, notas) — nunca
+# comitar num repositório público. Ver db/add_historico_disciplinas.sql
+# para o schema/RLS genérico (esse sim vai para o git).
+/db/local/
