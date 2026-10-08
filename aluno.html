@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Aluno — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.10" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.11" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -568,7 +568,7 @@
     </div>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.10
+      made by antonio.appleton | Departamento de Programação · v1.1.11
     </footer>
 
     <script>
@@ -602,6 +602,24 @@
           if (!canAccessTurma(professor, turma || {}, minhasTurmaIds || [])) {
             loadingEl.textContent = "Não tens acesso a este aluno.";
             return;
+          }
+
+          // Só o DT desta turma (ou admin) vê tudo sobre o aluno — um
+          // professor só de uma disciplina vê só Avaliações (ver
+          // db/add_acesso_dt_vs_professor.sql, que aplica a mesma regra a
+          // sério no RLS; o que fica escondido aqui também devolve 0
+          // linhas se pedido diretamente à API).
+          const veTudo = isDTouAdmin(professor, turma || {});
+          if (!veTudo) {
+            document.querySelector(".dt-student-summary").style.display = "none";
+            document.getElementById("editarNumeroBtn").style.display = "none";
+            ["#contactos", "#acompanhamento", "#reunioes", "#documentos", "#ocorrencias-scriptorium", "#historico"].forEach((href) => {
+              document.querySelector(`.dt-student-nav a[href="${href}"]`)?.style.setProperty("display", "none");
+            });
+            ["contactos", "acompanhamento", "documentos", "ocorrencias-scriptorium", "reunioes", "historico", "historico-academico"].forEach((id) => {
+              const el = document.getElementById(id);
+              if (el) el.style.display = "none";
+            });
           }
 
           document.getElementById("alunoNome").textContent = aluno.nome;
