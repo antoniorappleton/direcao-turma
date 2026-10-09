@@ -60,8 +60,11 @@ ser repostas uma vez para o novo padrão — ver `scripts/reset_teacher_password
 
 - Views de `turma.html`, `alunos.html`, `aluno.html`, `horario.html`, `documentos.html`
   (só o dashboard inicial e o login estão feitos).
-- Decidir se `turmas.diretor_turma` passa de texto livre para `diretor_turma_id`
-  (FK para `professores`) — necessário para os diretores de turma terem acesso
-  restrito só à sua turma via RLS.
+- ~~Decidir se `turmas.diretor_turma` passa de texto livre para `diretor_turma_id`~~
+  — feito em `db/add_diretor_turma_id.sql` (FK para `professores`, com backfill a
+  partir do nome); `diretor_turma` (texto) mantém-se só para apresentação,
+  partilhado com o Scriptorium. Depois de correr o ficheiro, confirmar (e corrigir
+  à mão se necessário) as turmas que o backfill não conseguiu resolver — ver a
+  query no fim do próprio ficheiro.
 - Ativar RLS nas tabelas partilhadas (ver `db/rls_exemplo.sql`) — com cuidado para
   não quebrar o Scriptorium.
