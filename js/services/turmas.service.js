@@ -21,11 +21,11 @@ const TurmasService = {
     return data;
   },
 
-  async getByDiretor(professorNome) {
+  async getByDiretor(professorId) {
     const { data, error } = await window.supabase
       .from("turmas")
       .select("*, ciclos(*)")
-      .eq("diretor_turma", professorNome);
+      .eq("diretor_turma_id", professorId);
     if (error) throw error;
     return data || [];
   },

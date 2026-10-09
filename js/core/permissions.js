@@ -10,10 +10,10 @@ function isAdmin(professor) {
   return professor?.role === "admin";
 }
 
-// NOTA: turmas.diretor_turma é hoje texto livre (nome), não uma referência ao
-// professor. Esta função funciona por nome enquanto isso não muda — quando
-// `turmas.diretor_turma_id` (FK para professores) existir, trocar a
-// comparação por turma.diretor_turma_id === professor.id.
+// turmas.diretor_turma_id é FK para professores (ver
+// db/add_diretor_turma_id.sql) — turmas.diretor_turma (texto livre) só
+// serve hoje para apresentação/denormalização no Scriptorium, já não é
+// usado para permissões.
 //
 // Propositadamente sem bypass de admin: representa só "é o diretor desta
 // turma", usado para decidir "as minhas turmas" por defeito no dashboard.
@@ -21,7 +21,7 @@ function isAdmin(professor) {
 // usar canAccessTurma.
 function isDiretorDaTurma(professor, turma) {
   if (!professor || !turma) return false;
-  return turma.diretor_turma === professor.nome;
+  return turma.diretor_turma_id === professor.id;
 }
 
 // `minhasTurmaIds` é a seleção do próprio professor em professor_turmas
