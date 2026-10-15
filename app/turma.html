@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Turma — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.12" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.13" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -124,6 +124,7 @@
           </div>
           <div class="dt-aval-header-actions">
             <button id="addAvaliacaoBtn" class="btn btn-primary">+ Registar avaliação</button>
+            <button id="addAvaliacaoLoteBtn" class="btn btn-secondary">+ Registar em lote</button>
             <button id="closeAvaliacoesBtn" class="icon-btn" title="Fechar" aria-label="Fechar">✕</button>
           </div>
         </div>
@@ -284,8 +285,98 @@
       </div>
     </div>
 
+    <div id="avaliacaoLoteOverlay" class="dt-modal-overlay">
+      <div class="dt-modal dt-modal--full" role="dialog" aria-modal="true" aria-labelledby="avaliacaoLoteTitle">
+        <div class="dt-aval-header">
+          <div>
+            <div class="dt-eyebrow">Avaliações</div>
+            <h2 id="avaliacaoLoteTitle" style="margin: 2px 0 0">Registar avaliação para a turma</h2>
+          </div>
+          <div class="dt-aval-header-actions">
+            <button type="button" id="closeAvaliacaoLoteBtn" class="icon-btn" title="Fechar" aria-label="Fechar">✕</button>
+          </div>
+        </div>
+
+        <form id="avaliacaoLoteForm" class="dt-aval-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="loteDisciplina">Disciplina</label>
+              <input type="text" id="loteDisciplina" class="form-control" list="avalDisciplinasList" required placeholder="Ex: Matemática A" />
+            </div>
+            <div class="form-group">
+              <label for="lotePeriodo">Período</label>
+              <select id="lotePeriodo" class="form-control" required>
+                <option value="1">1.º Período</option>
+                <option value="2">2.º Período</option>
+                <option value="3">3.º Período</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="loteData">Data</label>
+              <input type="date" id="loteData" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label for="loteTipo">Tipo</label>
+              <select id="loteTipo" class="form-control" required>
+                <option value="teste">Teste</option>
+                <option value="questao_aula">Questão Aula</option>
+                <option value="trabalho">Trabalho</option>
+                <option value="apresentacao">Apresentação</option>
+                <option value="oralidade">Oralidade</option>
+                <option value="projeto">Projeto</option>
+                <option value="ficha">Ficha</option>
+                <option value="intercalar" id="loteTipoIntercalarOpt">Avaliação Intercalar</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="loteTitulo">Designação</label>
+            <input type="text" id="loteTitulo" class="form-control" required placeholder="Ex: Teste de Funções" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="loteEscala">Escala</label>
+              <input type="text" id="loteEscala" class="form-control" value="0-20" />
+            </div>
+            <div class="form-group">
+              <label for="lotePeso">Peso % (opcional)</label>
+              <input type="number" id="lotePeso" class="form-control" step="1" min="0" max="100" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="loteObservacao">Observação (opcional, aplicada a todos)</label>
+            <textarea id="loteObservacao" class="form-control" rows="2"></textarea>
+          </div>
+
+          <div class="dt-lote-alunos-heading">
+            <h3 class="app-card-title" style="margin: 0">Classificações</h3>
+            <span id="loteAlunosCount" class="dt-count-label"></span>
+          </div>
+          <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 10px">
+            Preenche a classificação de cada aluno. Deixa em branco para não registar avaliação a esse aluno.
+          </p>
+
+          <div id="loteAlunosList" class="dt-lote-alunos-list"></div>
+
+          <div id="loteFormMsg"></div>
+
+          <div style="display: flex; gap: 8px; margin-top: 16px">
+            <button type="submit" class="btn btn-primary">Guardar avaliações</button>
+            <button type="button" id="cancelarAvalLoteBtn" class="btn btn-secondary">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.12
+      made by antonio.appleton | Departamento de Programação · v1.1.13
     </footer>
 
     <script>
@@ -487,6 +578,7 @@
 
           const avaliacoesOverlayEl = document.getElementById("avaliacoesOverlay");
           const avaliacaoFormOverlayEl = document.getElementById("avaliacaoFormOverlay");
+          const avaliacaoLoteOverlayEl = document.getElementById("avaliacaoLoteOverlay");
           const avalFiltroAlunoEl = document.getElementById("avalFiltroAluno");
           const avalFiltroDisciplinaEl = document.getElementById("avalFiltroDisciplina");
           const avalFiltroPeriodoEl = document.getElementById("avalFiltroPeriodo");
@@ -704,10 +796,115 @@
           avaliacaoFormOverlayEl.addEventListener("click", (event) => {
             if (event.target === avaliacaoFormOverlayEl) fecharAvaliacaoForm();
           });
+          const lotePeriodoEl = document.getElementById("lotePeriodo");
+          const loteTipoEl = document.getElementById("loteTipo");
+          const loteTipoIntercalarOptEl = document.getElementById("loteTipoIntercalarOpt");
+          const loteAlunosListEl = document.getElementById("loteAlunosList");
+
+          function atualizarOpcaoIntercalarLote() {
+            const periodo = lotePeriodoEl.value;
+            const permitido = periodo === "1" || periodo === "2";
+            loteTipoIntercalarOptEl.disabled = !permitido;
+            if (!permitido && loteTipoEl.value === "intercalar") loteTipoEl.value = "teste";
+          }
+
+          lotePeriodoEl.addEventListener("change", atualizarOpcaoIntercalarLote);
+
+          function renderLoteAlunos() {
+            document.getElementById("loteAlunosCount").textContent =
+              `${alunos.length} aluno${alunos.length === 1 ? "" : "s"}`;
+            loteAlunosListEl.innerHTML = alunos
+              .map(
+                (a) => `
+                <div class="dt-lote-aluno-row">
+                  <span class="dt-lote-aluno-nome">${a.nome}</span>
+                  <input type="number" class="form-control dt-lote-nota-input" step="0.1" min="0" placeholder="Nota" data-aluno-id="${a.id}" />
+                </div>`,
+              )
+              .join("");
+          }
+
+          function abrirAvaliacaoLoteForm() {
+            document.getElementById("avaliacaoLoteForm").reset();
+            document.getElementById("loteData").value = new Date().toISOString().slice(0, 10);
+            renderLoteAlunos();
+            atualizarOpcaoIntercalarLote();
+            document.getElementById("loteFormMsg").innerHTML = "";
+            avaliacaoLoteOverlayEl.classList.add("aberto");
+          }
+
+          function fecharAvaliacaoLoteForm() {
+            avaliacaoLoteOverlayEl.classList.remove("aberto");
+          }
+
+          document.getElementById("addAvaliacaoLoteBtn").addEventListener("click", abrirAvaliacaoLoteForm);
+          document.getElementById("cancelarAvalLoteBtn").addEventListener("click", fecharAvaliacaoLoteForm);
+          document.getElementById("closeAvaliacaoLoteBtn").addEventListener("click", fecharAvaliacaoLoteForm);
+          avaliacaoLoteOverlayEl.addEventListener("click", (event) => {
+            if (event.target === avaliacaoLoteOverlayEl) fecharAvaliacaoLoteForm();
+          });
+
           document.addEventListener("keydown", (event) => {
             if (event.key !== "Escape") return;
-            if (avaliacaoFormOverlayEl.classList.contains("aberto")) fecharAvaliacaoForm();
+            if (avaliacaoLoteOverlayEl.classList.contains("aberto")) fecharAvaliacaoLoteForm();
+            else if (avaliacaoFormOverlayEl.classList.contains("aberto")) fecharAvaliacaoForm();
             else if (avaliacoesOverlayEl.classList.contains("aberto")) fecharAvaliacoesOverlay();
+          });
+
+          document.getElementById("avaliacaoLoteForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const msgEl = document.getElementById("loteFormMsg");
+            msgEl.innerHTML = "";
+
+            const disciplina = document.getElementById("loteDisciplina").value.trim();
+            const periodo = Number(lotePeriodoEl.value);
+            const tipo = loteTipoEl.value;
+            const titulo = document.getElementById("loteTitulo").value.trim();
+            const data = document.getElementById("loteData").value;
+            const escala = document.getElementById("loteEscala").value.trim() || "0-20";
+            const pesoRaw = document.getElementById("lotePeso").value;
+            const peso = pesoRaw ? Number(pesoRaw) : null;
+            const observacao = document.getElementById("loteObservacao").value.trim() || null;
+
+            const inputs = Array.from(loteAlunosListEl.querySelectorAll(".dt-lote-nota-input"));
+            const registos = [];
+            for (const input of inputs) {
+              const raw = input.value.trim();
+              if (!raw) continue;
+              const nota = parseFloat(raw);
+              if (!Number.isFinite(nota)) {
+                msgEl.innerHTML = '<div class="alert alert-error">Classificação inválida para um dos alunos.</div>';
+                return;
+              }
+              registos.push({
+                aluno_id: input.dataset.alunoId,
+                turma_id: turmaId,
+                disciplina,
+                periodo,
+                tipo,
+                titulo,
+                data,
+                nota,
+                escala,
+                peso,
+                observacao,
+                criado_por: professor?.id || null,
+              });
+            }
+
+            if (!registos.length) {
+              msgEl.innerHTML = '<div class="alert alert-error">Preenche a classificação de pelo menos um aluno.</div>';
+              return;
+            }
+
+            try {
+              await AvaliacoesService.createMany(registos);
+              fecharAvaliacaoLoteForm();
+              await carregarAvaliacoes();
+            } catch (err) {
+              console.error(err);
+              msgEl.innerHTML = '<div class="alert alert-error">Erro ao guardar avaliações.</div>';
+            }
           });
 
           document.getElementById("avaliacaoForm").addEventListener("submit", async (event) => {
