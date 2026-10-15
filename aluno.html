@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Aluno — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.13" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.14" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -14,6 +14,7 @@
     <script src="js/utils/dates.js"></script>
     <script src="js/services/turmas.service.js"></script>
     <script src="js/services/alunos.service.js"></script>
+    <script src="js/services/matriculas.service.js"></script>
     <script src="js/services/professor-turmas.service.js"></script>
     <script src="js/services/encarregados.service.js"></script>
     <script src="js/services/registos.service.js"></script>
@@ -338,7 +339,10 @@
             </div>
 
             <div class="app-card dt-student-panel" id="historico">
-              <div class="app-card-title"><span>Histórico de Matrículas</span></div>
+              <div class="app-card-title">
+                <span>Histórico de Matrículas</span>
+                <button id="addMatriculaBtn" class="btn btn-secondary">+ Adicionar</button>
+              </div>
               <div id="matriculasList" class="admin-list-container" style="max-height: none"></div>
             </div>
 
@@ -421,6 +425,53 @@
           <button type="button" id="encarregadoCancelBtn" class="btn btn-secondary" style="flex: 1">Cancelar</button>
         </div>
       </form>
+      </div>
+    </div>
+
+    <div id="matriculaOverlay" class="dt-modal-overlay">
+      <div class="dt-modal" role="dialog" aria-modal="true" aria-labelledby="matriculaDialogTitle">
+        <form id="matriculaForm">
+          <h3 class="app-card-title" id="matriculaDialogTitle" style="margin-bottom: 16px">Adicionar Matrícula</h3>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="matriculaAnoLetivo">Ano letivo</label>
+              <select id="matriculaAnoLetivo" class="form-control" required></select>
+            </div>
+            <div class="form-group">
+              <label for="matriculaTurma">Turma</label>
+              <select id="matriculaTurma" class="form-control" required></select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="matriculaDataInicio">Data início</label>
+              <input type="date" id="matriculaDataInicio" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label for="matriculaDataFim">Data fim (opcional)</label>
+              <input type="date" id="matriculaDataFim" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="matriculaEstado">Estado</label>
+            <select id="matriculaEstado" class="form-control">
+              <option value="ativa">Ativa</option>
+              <option value="transferida">Transferida</option>
+              <option value="concluida">Concluída</option>
+              <option value="anulada">Anulada</option>
+            </select>
+          </div>
+
+          <div id="matriculaMsg"></div>
+
+          <div style="display: flex; gap: 12px; margin-top: 20px">
+            <button type="submit" class="btn btn-primary" style="flex: 2">Guardar</button>
+            <button type="button" id="matriculaCancelBtn" class="btn btn-secondary" style="flex: 1">Cancelar</button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -568,7 +619,7 @@
     </div>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.13
+      made by antonio.appleton | Departamento de Programação · v1.1.14
     </footer>
 
     <script>
@@ -817,23 +868,138 @@
           });
 
           const matriculasEl = document.getElementById("matriculasList");
-          const matriculas = await AlunosService.getHistoricoMatriculas(alunoId);
-          matriculasEl.innerHTML = matriculas.length
-            ? matriculas
-                .map(
-                  (m) => `
-                  <div class="admin-list-item">
-                    <div>
-                      <strong>${m.turmas?.nome || ""} ${m.turmas?.ano ? `(${m.turmas.ano}º ano)` : ""}</strong>
-                      <span style="color: var(--text-muted); font-size: 12px; display: block">
-                        ${m.anos_letivos?.nome || ""} · ${formatDate(m.data_inicio)}${m.data_fim ? ` a ${formatDate(m.data_fim)}` : ""}
-                      </span>
-                    </div>
-                    <span class="badge ${m.estado === "ativa" ? "badge-synced" : "badge-pending"}">${m.estado || ""}</span>
-                  </div>`,
-                )
-                .join("")
-            : '<div class="admin-list-item" style="color: var(--text-muted)">Sem histórico de matrículas.</div>';
+          let matriculasAtuais = [];
+
+          function renderMatriculas(matriculas) {
+            matriculasAtuais = matriculas;
+            matriculasEl.innerHTML = matriculas.length
+              ? matriculas
+                  .map(
+                    (m) => `
+                    <div class="admin-list-item" data-id="${m.id}">
+                      <div>
+                        <strong>${m.turmas?.nome || "—"} ${m.turmas?.ano ? `(${m.turmas.ano}º ano)` : ""}</strong>
+                        <span style="color: var(--text-muted); font-size: 12px; display: block">
+                          ${m.anos_letivos?.nome || ""} · ${formatDate(m.data_inicio)}${m.data_fim ? ` a ${formatDate(m.data_fim)}` : ""}
+                        </span>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <span class="badge ${m.estado === "ativa" ? "badge-synced" : "badge-pending"}">${m.estado || ""}</span>
+                        <button type="button" class="icon-btn edit-matricula-btn" title="Editar matrícula" aria-label="Editar matrícula">✎</button>
+                        <button type="button" class="icon-btn danger apagar-matricula-btn" title="Apagar matrícula" aria-label="Apagar matrícula">✕</button>
+                      </div>
+                    </div>`,
+                  )
+                  .join("")
+              : '<div class="admin-list-item" style="color: var(--text-muted)">Sem histórico de matrículas.</div>';
+          }
+
+          async function carregarMatriculas() {
+            renderMatriculas(await AlunosService.getHistoricoMatriculas(alunoId));
+          }
+
+          await carregarMatriculas();
+
+          const matriculaOverlayEl = document.getElementById("matriculaOverlay");
+          const matriculaFormEl = document.getElementById("matriculaForm");
+          const matriculaMsgEl = document.getElementById("matriculaMsg");
+          const matriculaDialogTitleEl = document.getElementById("matriculaDialogTitle");
+          const matriculaAnoLetivoEl = document.getElementById("matriculaAnoLetivo");
+          const matriculaTurmaEl = document.getElementById("matriculaTurma");
+          let matriculaAnosLetivosOpcoes = "";
+          let matriculaTurmasOpcoes = "";
+
+          async function abrirMatriculaForm(matricula) {
+            matriculaMsgEl.innerHTML = "";
+            matriculaFormEl.dataset.id = matricula?.id || "";
+            matriculaDialogTitleEl.textContent = matricula ? "Editar Matrícula" : "Adicionar Matrícula";
+
+            if (!matriculaAnosLetivosOpcoes) {
+              const anosLetivos = await MatriculasService.getAnosLetivos();
+              matriculaAnosLetivosOpcoes = anosLetivos.map((a) => `<option value="${a.id}">${a.nome}</option>`).join("");
+            }
+            if (!matriculaTurmasOpcoes) {
+              const turmas = await TurmasService.getAll();
+              matriculaTurmasOpcoes = turmas.map((t) => `<option value="${t.id}">${t.nome} (${t.ano}º ano)</option>`).join("");
+            }
+            matriculaAnoLetivoEl.innerHTML = matriculaAnosLetivosOpcoes;
+            matriculaTurmaEl.innerHTML = matriculaTurmasOpcoes;
+
+            matriculaAnoLetivoEl.value = matricula?.ano_letivo_id || "";
+            matriculaTurmaEl.value = matricula?.turma_id || "";
+            document.getElementById("matriculaDataInicio").value = matricula?.data_inicio || new Date().toISOString().slice(0, 10);
+            document.getElementById("matriculaDataFim").value = matricula?.data_fim || "";
+            document.getElementById("matriculaEstado").value = matricula?.estado || "ativa";
+
+            matriculaOverlayEl.classList.add("aberto");
+          }
+
+          function fecharMatriculaForm() {
+            matriculaOverlayEl.classList.remove("aberto");
+          }
+
+          document.getElementById("addMatriculaBtn").addEventListener("click", () => abrirMatriculaForm(null));
+          document.getElementById("matriculaCancelBtn").addEventListener("click", fecharMatriculaForm);
+          matriculaOverlayEl.addEventListener("click", (event) => {
+            if (event.target === matriculaOverlayEl) fecharMatriculaForm();
+          });
+          document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && matriculaOverlayEl.classList.contains("aberto")) fecharMatriculaForm();
+          });
+
+          matriculasEl.addEventListener("click", async (event) => {
+            const item = event.target.closest(".admin-list-item[data-id]");
+            if (!item) return;
+            if (event.target.closest(".edit-matricula-btn")) {
+              const matricula = matriculasAtuais.find((m) => m.id === item.dataset.id);
+              if (matricula) abrirMatriculaForm(matricula);
+            } else if (event.target.closest(".apagar-matricula-btn")) {
+              if (!confirm("Apagar esta matrícula?")) return;
+              await MatriculasService.delete(item.dataset.id);
+              await carregarMatriculas();
+            }
+          });
+
+          matriculaFormEl.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const anoLetivoId = matriculaAnoLetivoEl.value;
+            const turmaIdSelecionada = matriculaTurmaEl.value;
+            if (!anoLetivoId || !turmaIdSelecionada) {
+              matriculaMsgEl.innerHTML = '<div class="alert alert-error">Ano letivo e turma são obrigatórios.</div>';
+              return;
+            }
+            const payload = {
+              aluno_id: alunoId,
+              turma_id: turmaIdSelecionada,
+              ano_letivo_id: anoLetivoId,
+              data_inicio: document.getElementById("matriculaDataInicio").value || null,
+              data_fim: document.getElementById("matriculaDataFim").value || null,
+              estado: document.getElementById("matriculaEstado").value,
+            };
+            const submitBtn = matriculaFormEl.querySelector("button[type=submit]");
+            if (submitBtn) {
+              submitBtn.disabled = true;
+              submitBtn.textContent = "A guardar…";
+            }
+            try {
+              const existingId = matriculaFormEl.dataset.id;
+              if (existingId) {
+                await MatriculasService.update(existingId, payload);
+              } else {
+                await MatriculasService.create(payload);
+              }
+              fecharMatriculaForm();
+              await carregarMatriculas();
+            } catch (err) {
+              console.error(err);
+              matriculaMsgEl.innerHTML = '<div class="alert alert-error">Erro ao guardar matrícula.</div>';
+            } finally {
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Guardar";
+              }
+            }
+          });
 
           try {
             const historicoAcademicoEl = document.getElementById("historicoAcademicoList");
