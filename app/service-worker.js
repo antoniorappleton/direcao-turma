@@ -1,4 +1,4 @@
-const CACHE_NAME = "direcao-turma-v33";
+const CACHE_NAME = "direcao-turma-v34";
 const PRECACHE = [
   "./",
   "index.html",
@@ -8,7 +8,7 @@ const PRECACHE = [
   "aluno.html",
   "minhas-turmas.html",
   "perfil.html",
-  "css/styles.css?v=1.1.13",
+  "css/styles.css?v=1.1.14",
   "js/core/config.js",
   "js/core/session.js",
   "js/core/auth.js",
@@ -16,6 +16,7 @@ const PRECACHE = [
   "js/pwa-install.js",
   "js/services/turmas.service.js",
   "js/services/alunos.service.js",
+  "js/services/matriculas.service.js",
   "js/services/professor-turmas.service.js",
   "js/services/encarregados.service.js",
   "js/services/registos.service.js",
@@ -24,6 +25,7 @@ const PRECACHE = [
   "js/services/historico-academico.service.js",
   "js/services/reunioes.service.js",
   "js/services/scriptorium.service.js",
+  "js/services/tarefas.service.js",
   "js/utils/dates.js",
   "manifest.json",
   "assets/logo.png",

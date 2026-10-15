@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Perfil — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.13" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.14" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -13,6 +13,7 @@
     <script src="js/core/permissions.js"></script>
     <script src="js/utils/dates.js"></script>
     <script src="js/services/documentos.service.js"></script>
+    <script src="js/services/tarefas.service.js"></script>
     <script src="js/pwa-install.js"></script>
   </head>
   <body class="dt-workspace">
@@ -123,11 +124,27 @@
 
           <div id="docsList" class="dt-document-list"></div>
         </section>
+
+        <section class="dt-section">
+          <div class="dt-section-heading">
+            <div>
+              <div class="dt-eyebrow">Organização</div>
+              <h2>As minhas tarefas</h2>
+            </div>
+          </div>
+
+          <form id="tarefaForm" class="dt-input-with-action" style="margin-bottom: 14px">
+            <input type="text" id="tarefaTitulo" class="form-control" placeholder="Nova tarefa..." required />
+            <button type="submit" class="btn btn-primary">+ Adicionar</button>
+          </form>
+
+          <div id="tarefasList" class="admin-list-container" style="max-height: none"></div>
+        </section>
       </div>
     </main>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.13
+      made by antonio.appleton | Departamento de Programação · v1.1.14
     </footer>
 
     <script>
@@ -307,6 +324,74 @@
             if (!confirm("Apagar este ficheiro?")) return;
             await DocumentosService.delete(id, path);
             await carregarDocs();
+          }
+        });
+
+        // --- As minhas tarefas -------------------------------------------
+        const tarefasListEl = document.getElementById("tarefasList");
+
+        function renderTarefas(tarefas) {
+          const ordenadas = [...tarefas].sort((a, b) => {
+            if (a.concluida !== b.concluida) return a.concluida ? 1 : -1;
+            return new Date(b.criado_em) - new Date(a.criado_em);
+          });
+          tarefasListEl.innerHTML = ordenadas.length
+            ? ordenadas
+                .map(
+                  (t) => `
+                  <div class="admin-list-item" data-id="${t.id}">
+                    <label style="display: flex; align-items: center; gap: 10px; flex: 1; cursor: pointer; min-width: 0">
+                      <input type="checkbox" class="tarefa-check" style="width: auto" ${t.concluida ? "checked" : ""} />
+                      <span style="${t.concluida ? "text-decoration: line-through; color: var(--text-muted)" : ""}">${t.titulo}</span>
+                    </label>
+                    <button type="button" class="icon-btn danger apagar-tarefa-btn" title="Apagar tarefa" aria-label="Apagar tarefa">✕</button>
+                  </div>`,
+                )
+                .join("")
+            : '<div class="admin-list-item" style="color: var(--text-muted)">Sem tarefas por agora.</div>';
+        }
+
+        async function carregarTarefas() {
+          renderTarefas(await TarefasService.getByProfessor(professor.id));
+        }
+
+        await carregarTarefas();
+
+        const tarefaFormEl = document.getElementById("tarefaForm");
+        const tarefaTituloEl = document.getElementById("tarefaTitulo");
+
+        tarefaFormEl.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const titulo = tarefaTituloEl.value.trim();
+          if (!titulo) return;
+          try {
+            await TarefasService.create({ professor_id: professor.id, titulo });
+            tarefaTituloEl.value = "";
+            await carregarTarefas();
+          } catch (err) {
+            console.error(err);
+            alert("Erro ao guardar tarefa.");
+          }
+        });
+
+        tarefasListEl.addEventListener("click", async (event) => {
+          const item = event.target.closest(".admin-list-item[data-id]");
+          if (!item) return;
+          const { id } = item.dataset;
+
+          if (event.target.closest(".tarefa-check")) {
+            const concluida = event.target.checked;
+            try {
+              await TarefasService.update(id, { concluida, concluida_em: concluida ? new Date().toISOString() : null });
+              await carregarTarefas();
+            } catch (err) {
+              console.error(err);
+              alert("Erro ao atualizar tarefa.");
+            }
+          } else if (event.target.closest(".apagar-tarefa-btn")) {
+            if (!confirm("Apagar esta tarefa?")) return;
+            await TarefasService.delete(id);
+            await carregarTarefas();
           }
         });
 
