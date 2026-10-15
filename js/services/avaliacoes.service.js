@@ -59,6 +59,15 @@ const AvaliacoesService = {
     return data;
   },
 
+  // Registo em lote — uma avaliação por aluno, campos comuns partilhados
+  // (disciplina/período/data/tipo/designação/escala/peso/observação), usado
+  // pelo formulário de "Registar avaliação" para toda a turma de uma vez.
+  async createMany(avaliacoesArray) {
+    const { data, error } = await window.supabase.from("avaliacoes").insert(avaliacoesArray).select();
+    if (error) throw error;
+    return data || [];
+  },
+
   async update(id, changes) {
     const { error } = await window.supabase.from("avaliacoes").update(changes).eq("id", id);
     if (error) throw error;
