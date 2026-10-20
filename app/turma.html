@@ -125,6 +125,7 @@
           <div class="dt-aval-header-actions">
             <button id="addAvaliacaoBtn" class="btn btn-primary">+ Registar avaliação</button>
             <button id="addAvaliacaoLoteBtn" class="btn btn-secondary">+ Registar em lote</button>
+            <button id="exportarRelatorioBtn" class="btn btn-secondary" title="Gera um relatório de avaliação intercalar (um por aluno) para o período selecionado no filtro">Exportar relatório da turma</button>
             <button id="closeAvaliacoesBtn" class="icon-btn" title="Fechar" aria-label="Fechar">✕</button>
           </div>
         </div>
@@ -376,7 +377,7 @@
     </div>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.15
+      made by antonio.appleton | Departamento de Programação · v1.1.16
     </footer>
 
     <script>
@@ -583,6 +584,12 @@
             return valores.reduce((soma, v) => soma + v, 0) / valores.length;
           }
 
+          function escapeHtml(texto) {
+            return String(texto ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+          }
+
+          const PERIODO_LABELS = { 1: "1.º Período", 2: "2.º Período", 3: "3.º Período" };
+
           let avaliacoes = [];
           let avaliacoesCarregadas = false;
 
@@ -779,6 +786,132 @@
             await AvaliacoesService.delete(item.dataset.id);
             await carregarAvaliacoes();
           });
+
+          // Relatório de Avaliação Intercalar — reproduz o modelo em PDF usado
+          // pelo colégio: um registo por página, com a turma inteira num só
+          // documento (via impressão/"Guardar como PDF" do browser, para não
+          // depender de bibliotecas externas). Usa as avaliações já
+          // carregadas (tipo "intercalar") no período escolhido no filtro —
+          // não há (ainda) domínios Saber Ser/Saber Fazer/Saber Saber nem
+          // médias oficiais no modelo de dados, por isso o relatório mostra
+          // só disciplina, nota e comentário, mais a média do aluno.
+          function gerarRelatorioTurma() {
+            const periodo = avalFiltroPeriodoEl.value;
+            if (!periodo) {
+              alert("Seleciona um período (no filtro acima) para gerar o relatório da turma.");
+              return;
+            }
+            const porAluno = new Map();
+            avaliacoes
+              .filter((a) => a.tipo === "intercalar" && String(a.periodo) === periodo)
+              .forEach((a) => {
+                if (!porAluno.has(a.aluno_id)) porAluno.set(a.aluno_id, []);
+                porAluno.get(a.aluno_id).push(a);
+              });
+
+            const alunosComDados = alunos
+              .filter((al) => porAluno.has(al.id))
+              .sort((a, b) => a.nome.localeCompare(b.nome, "pt"));
+
+            if (!alunosComDados.length) {
+              alert("Não há avaliações intercalares registadas para este período.");
+              return;
+            }
+
+            const periodoLabel = PERIODO_LABELS[periodo] || `${periodo}.º Período`;
+            const anoLetivo = document.getElementById("classSchoolYear").textContent;
+            const logoUrl = new URL("assets/logo.png", location.href).href;
+            const geradoEm = new Date().toLocaleString("pt-PT");
+
+            const paginas = alunosComDados
+              .map((aluno) => {
+                const registos = porAluno
+                  .get(aluno.id)
+                  .slice()
+                  .sort((a, b) => a.disciplina.localeCompare(b.disciplina, "pt"));
+                const mediaAluno = media(registos.filter(isEscala20).map((r) => r.nota));
+                const linhas = registos
+                  .map(
+                    (r) => `
+                  <tr>
+                    <td>${escapeHtml(r.disciplina)}</td>
+                    <td class="rel-col-nota">${typeof r.nota === "number" ? formatNota(r.nota) : "—"}</td>
+                    <td>${escapeHtml(r.observacao || "")}</td>
+                  </tr>`,
+                  )
+                  .join("");
+                return `
+                <section class="rel-pagina">
+                  <header class="rel-header">
+                    <img src="${logoUrl}" alt="" class="rel-logo" />
+                    <div class="rel-titulo">
+                      <h1>Relatório de Avaliação Intercalar</h1>
+                      <p>${escapeHtml(periodoLabel)} Intercalar &middot; ${escapeHtml(anoLetivo)}</p>
+                    </div>
+                  </header>
+                  <div class="rel-aluno">
+                    <strong>${aluno.numero_interno ? `${escapeHtml(String(aluno.numero_interno))} — ` : ""}${escapeHtml(aluno.nome)}</strong>
+                    <span>${escapeHtml(turma.nome)}</span>
+                  </div>
+                  <table class="rel-tabela">
+                    <thead><tr><th>Disciplina</th><th class="rel-col-nota">Nota</th><th>Comentário</th></tr></thead>
+                    <tbody>${linhas}</tbody>
+                  </table>
+                  <div class="rel-media"><span>Média</span><strong>${mediaAluno === null ? "—" : formatNota(mediaAluno)}</strong></div>
+                  <div class="rel-assinaturas">
+                    <div class="rel-assinatura"><div class="rel-linha"></div><span>O Diretor de Turma</span><span>Data: ___ / ___ / ______</span></div>
+                    <div class="rel-assinatura"><div class="rel-linha"></div><span>O Encarregado de Educação</span><span>Data: ___ / ___ / ______</span></div>
+                  </div>
+                  <footer class="rel-footer">Gerado em ${escapeHtml(geradoEm)}</footer>
+                </section>`;
+              })
+              .join("");
+
+            const html = `<!doctype html>
+              <html lang="pt">
+              <head>
+                <meta charset="utf-8" />
+                <title>Relatório de Avaliação Intercalar — ${escapeHtml(turma.nome)}</title>
+                <style>
+                  * { box-sizing: border-box; }
+                  body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; margin: 0; }
+                  .rel-pagina { padding: 28px 36px; page-break-after: always; }
+                  .rel-pagina:last-child { page-break-after: auto; }
+                  .rel-header { display: flex; align-items: center; gap: 16px; border-bottom: 2px solid #1a1a1a; padding-bottom: 12px; margin-bottom: 16px; }
+                  .rel-logo { width: 64px; height: 64px; object-fit: contain; }
+                  .rel-titulo h1 { font-size: 18px; margin: 0; }
+                  .rel-titulo p { font-size: 13px; margin: 4px 0 0; color: #444; }
+                  .rel-aluno { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; margin-bottom: 14px; }
+                  .rel-tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
+                  .rel-tabela th, .rel-tabela td { border: 1px solid #999; padding: 8px 10px; text-align: left; vertical-align: top; }
+                  .rel-tabela th { background: #f0f0f0; }
+                  .rel-col-nota { width: 70px; text-align: center; }
+                  .rel-media { display: flex; justify-content: flex-end; gap: 10px; font-size: 14px; margin: 14px 2px; }
+                  .rel-assinaturas { display: flex; justify-content: space-between; gap: 40px; margin-top: 56px; }
+                  .rel-assinatura { flex: 1; text-align: center; font-size: 12px; color: #333; }
+                  .rel-linha { border-top: 1px solid #333; margin-bottom: 6px; }
+                  .rel-footer { margin-top: 24px; font-size: 10px; color: #777; text-align: center; }
+                  @media print {
+                    @page { size: A4; margin: 14mm; }
+                    .rel-pagina { padding: 0; }
+                  }
+                </style>
+              </head>
+              <body>${paginas}</body>
+              </html>`;
+
+            const janela = window.open("", "_blank");
+            if (!janela) {
+              alert("O browser bloqueou a janela do relatório. Permite pop-ups para este site e tenta novamente.");
+              return;
+            }
+            janela.document.write(html);
+            janela.document.close();
+            janela.focus();
+            janela.onload = () => janela.print();
+          }
+
+          document.getElementById("exportarRelatorioBtn").addEventListener("click", gerarRelatorioTurma);
 
           function atualizarOpcaoIntercalar() {
             const periodo = avalPeriodoFormEl.value;
