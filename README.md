@@ -51,7 +51,14 @@ obrigatórios antes de chegar ao painel:
    para a primeira entrada, depois disso é obrigatório definir uma pessoal
    (`professores.deve_mudar_password`).
 2. **Escolher as turmas** (`minhas-turmas.html`) — só depois de ter password própria é que é
-   reencaminhado para escolher as turmas de que é diretor/professor; só vê essas no painel DT.
+   reencaminhado para escolher as turmas que leciona; essa seleção alimenta o painel "Turmas que
+   leciono" (`turmas-leciono.html`). O Painel DT (`index.html`) é independente desta seleção — mostra
+   sempre, automaticamente, só as turmas de que é realmente diretor (`turmas.diretor_turma_id`), ver
+   `app/js/core/permissions.js` (`isDiretorDaTurma`). São dois painéis deliberadamente distintos:
+   um para a função de direção de turma, outro para a função de professor de disciplina. Ser DT de
+   uma turma dá sempre acesso a ela (`turma.html`, incluindo dar notas), mesmo que essa turma nunca
+   tenha sido adicionada à seleção de "Turmas que leciono" — ver `canAccessTurma` e
+   `db/add_dt_acesso_avaliacoes.sql`.
 
 Contas que já existiam antes desta mudança (todas na antiga password partilhada) precisam de
 ser repostas uma vez para o novo padrão — ver `scripts/reset_teacher_passwords.ps1`.
@@ -68,3 +75,5 @@ ser repostas uma vez para o novo padrão — ver `scripts/reset_teacher_password
   query no fim do próprio ficheiro.
 - Ativar RLS nas tabelas partilhadas (ver `db/rls_exemplo.sql`) — com cuidado para
   não quebrar o Scriptorium.
+- **Correr `db/add_dt_acesso_avaliacoes.sql`** no SQL Editor do Supabase — garante que ser DT de
+  uma turma dá acesso a ela mesmo sem estar em `professor_turmas` (ver nota no onboarding, acima).

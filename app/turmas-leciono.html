@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Turmas que leciono — Direção de Turma</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.15" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="js/core/config.js"></script>
+    <script src="js/core/session.js"></script>
+    <script src="js/core/auth.js"></script>
+    <script src="js/core/permissions.js"></script>
+    <script src="js/services/turmas.service.js"></script>
+    <script src="js/services/alunos.service.js"></script>
+    <script src="js/services/professor-turmas.service.js"></script>
+    <script src="js/pwa-install.js"></script>
+  </head>
+  <body class="dt-workspace dt-dashboard-body">
+    <header class="app-header">
+      <a href="index.html" class="brand">
+        <img src="assets/logo.png" alt="Direção de Turma" class="brand-logo" />
+        <div class="brand-text">
+          <h1>DIREÇÃO DE TURMA</h1>
+          <div class="tag">Comunidade CSJ Ramalhão</div>
+        </div>
+      </a>
+      <nav class="nav-menu">
+        <a href="index.html">Painel DT</a>
+        <a href="turmas-leciono.html" class="active">Turmas que leciono</a>
+        <a href="perfil.html">Perfil</a>
+        <button id="signOutBtn">Sair</button>
+      </nav>
+    </header>
+
+    <main class="app-container dt-dashboard">
+      <section class="dt-page-heading">
+        <div>
+          <div class="dt-role-pill dt-role-pill--prof">Turmas que leciono</div>
+          <h2>As turmas que leciono</h2>
+          <p id="welcomeMsg"></p>
+        </div>
+        <div class="dt-heading-meta">
+          <span>Ano letivo</span>
+          <strong id="anoLetivo"></strong>
+        </div>
+      </section>
+
+      <section class="dt-metrics" aria-label="Resumo das turmas lecionadas">
+        <div class="dt-metric"><span>Turmas lecionadas</span><strong id="metricTurmas">—</strong></div>
+        <div class="dt-metric"><span>Onde sou DT</span><strong id="metricDT">—</strong></div>
+        <div class="dt-metric"><span>Alunos</span><strong id="metricAlunos">—</strong></div>
+        <div class="dt-metric"><span>Ciclos</span><strong id="metricCiclos">—</strong></div>
+      </section>
+
+      <section class="dt-section dt-classes-section">
+        <div class="dt-section-heading">
+          <div>
+            <div class="dt-eyebrow">Acesso rápido</div>
+            <h2>Turmas</h2>
+          </div>
+          <a href="minhas-turmas.html" class="btn btn-secondary">Gerir seleção</a>
+        </div>
+        <div id="turmasList" class="dt-class-list">
+          <div class="dt-empty-state">A carregar turmas...</div>
+        </div>
+      </section>
+    </main>
+
+    <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
+      made by antonio.appleton | Departamento de Programação · v1.1.15
+    </footer>
+
+    <script>
+      (async () => {
+        const session = await requireSession("login.html");
+        if (!session) return;
+
+        const professor = await getCurrentProfessor();
+        if (guardMustChangePassword(professor)) return;
+
+        const welcomeEl = document.getElementById("welcomeMsg");
+        if (welcomeEl && professor) {
+          welcomeEl.textContent = `Olá, ${professor.nome || professor.email}`;
+        }
+
+        const anoAtual = new Date().getFullYear();
+        const inicioAnoLetivo = new Date().getMonth() >= 8 ? anoAtual : anoAtual - 1;
+        document.getElementById("anoLetivo").textContent = `${inicioAnoLetivo}/${inicioAnoLetivo + 1}`;
+
+        document.getElementById("signOutBtn")?.addEventListener("click", signOut);
+
+        const listEl = document.getElementById("turmasList");
+
+        function render(turmas) {
+          if (!turmas.length) {
+            listEl.innerHTML = `
+              <div class="dt-empty-state-cta">
+                <p>Ainda não selecionaste as turmas que lecionas.</p>
+                <a href="minhas-turmas.html?primeira=1" class="btn btn-primary">Selecionar turmas</a>
+              </div>`;
+            return;
+          }
+          listEl.innerHTML = turmas
+            .map(
+              (t) => `
+              <a href="turma.html?id=${t.id}&from=leciono" class="dt-class-link">
+                <span class="dt-class-mark dt-class-mark--prof" aria-hidden="true">${String(t.ano || "").padStart(2, "0")}</span>
+                <span class="dt-class-name">
+                  <strong>${t.nome} (${t.ano}º ano)${isDiretorDaTurma(professor, t) ? '<span class="dt-class-dt-tag">DT</span>' : ""}</strong>
+                  <small>${t.ciclos?.nome || ""}</small>
+                </span>
+                <span class="dt-class-arrow" aria-hidden="true">›</span>
+              </a>`,
+            )
+            .join("");
+        }
+
+        try {
+          const [todasTurmas, minhasTurmaIds] = await Promise.all([
+            TurmasService.getAll(),
+            ProfessorTurmasService.getIdsByProfessor(professor.id),
+          ]);
+
+          const minhasTurmas = todasTurmas.filter((t) => minhasTurmaIds.includes(t.id));
+          const turmasOndeSouDT = minhasTurmas.filter((t) => isDiretorDaTurma(professor, t));
+          const ciclos = new Set(minhasTurmas.map((t) => t.ciclos?.nome).filter(Boolean));
+
+          document.getElementById("metricTurmas").textContent = minhasTurmas.length;
+          document.getElementById("metricDT").textContent = turmasOndeSouDT.length;
+          document.getElementById("metricCiclos").textContent = ciclos.size;
+
+          render(minhasTurmas);
+
+          try {
+            const alunos = await AlunosService.getByTurmas(minhasTurmas.map((t) => t.id));
+            document.getElementById("metricAlunos").textContent = alunos.length;
+          } catch (alunosErr) {
+            console.error(alunosErr);
+            document.getElementById("metricAlunos").textContent = "—";
+          }
+        } catch (e) {
+          console.error(e);
+          listEl.innerHTML = '<div class="admin-list-item" style="color: var(--error)">Erro ao carregar turmas.</div>';
+        }
+      })();
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("service-worker.js")
+          .then((reg) => {
+            if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+            reg.addEventListener("updatefound", () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener("statechange", () => {
+                if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                  newWorker.postMessage({ type: "SKIP_WAITING" });
+                }
+              });
+            });
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+              if (refreshing) return;
+              refreshing = true;
+              window.location.reload();
+            });
+          })
+          .catch(console.error);
+      }
+    </script>
+  </body>
+</html>

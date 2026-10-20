@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>As minhas turmas — Direção de Turma</title>
+    <title>Gerir turmas que leciono — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.14" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.15" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -26,7 +26,7 @@
       </a>
       <nav class="nav-menu">
         <a href="index.html">Painel DT</a>
-        <a href="minhas-turmas.html" class="active">As minhas turmas</a>
+        <a href="turmas-leciono.html" class="active">Turmas que leciono</a>
         <a href="perfil.html">Perfil</a>
         <button id="signOutBtn">Sair</button>
       </nav>
@@ -37,10 +37,12 @@
 
       <div id="conteudo" style="display: none">
         <div class="app-card">
-          <h2 class="app-card-title" style="margin-bottom: 4px">As minhas turmas</h2>
+          <a href="turmas-leciono.html" class="dt-breadcrumb">Turmas que leciono <span aria-hidden="true">/</span> Gerir seleção</a>
+          <h2 class="app-card-title" style="margin-bottom: 4px">Seleciona as turmas que lecionas</h2>
           <p id="introMsg" style="color: var(--text-muted); font-size: 13px; margin: 0 0 20px">
-            Seleciona as turmas que lecionas. Só terás acesso a estas no painel DT — podes voltar aqui para
-            atualizar a qualquer momento.
+            Estas são as turmas que aparecem no painel "Turmas que leciono" — podes voltar aqui para
+            atualizar a qualquer momento. As turmas de que és diretor de turma aparecem sempre, de forma
+            automática, no Painel DT, independentemente desta seleção.
           </p>
 
           <div id="turmasChecklist"></div>
@@ -49,14 +51,14 @@
 
           <div style="display: flex; gap: 12px; margin-top: 20px">
             <button id="guardarBtn" class="btn btn-primary" style="flex: 2">Guardar</button>
-            <a href="index.html" class="btn btn-secondary" style="flex: 1; text-align: center">Cancelar</a>
+            <a href="turmas-leciono.html" class="btn btn-secondary" style="flex: 1; text-align: center">Cancelar</a>
           </div>
         </div>
       </div>
     </main>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.14
+      made by antonio.appleton | Departamento de Programação · v1.1.15
     </footer>
 
     <script>
@@ -82,7 +84,7 @@
 
           if (primeiraVez) {
             document.getElementById("introMsg").textContent =
-              "Antes de começares: seleciona as turmas que lecionas. Só terás acesso a estas no painel DT — podes voltar aqui para atualizar a qualquer momento.";
+              "Antes de começares: seleciona as turmas que lecionas. Vão aparecer no painel \"Turmas que leciono\" — podes voltar aqui para atualizar a qualquer momento.";
           }
 
           const [todasTurmas, jaSelecionadas] = await Promise.all([
@@ -130,7 +132,7 @@
             btn.textContent = "A guardar…";
             try {
               await ProfessorTurmasService.setTurmas(professor.id, selecionadas);
-              window.location.href = "index.html";
+              window.location.href = "turmas-leciono.html";
             } catch (err) {
               console.error(err);
               formMsgEl.innerHTML = '<div class="alert alert-error">Erro ao guardar as turmas.</div>';

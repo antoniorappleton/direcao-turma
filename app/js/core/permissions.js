@@ -26,11 +26,15 @@ function isDiretorDaTurma(professor, turma) {
 
 // `minhasTurmaIds` é a seleção do próprio professor em professor_turmas
 // (ver minhas-turmas.html) — as turmas que leciona, escolhidas por ele.
-// Admins veem sempre tudo; os restantes só acedem ao que selecionaram,
-// independentemente de serem ou não o DT (ver isDiretorDaTurma, que só
-// serve para pré-marcar o checklist, não para controlar acesso).
+// Admins veem sempre tudo; os restantes acedem ao que selecionaram OU às
+// turmas de que são mesmo o DT (turmas.diretor_turma_id), mesmo que nunca
+// as tenham adicionado à sua seleção de "Turmas que leciono" — sem este
+// bypass, o Painel DT (que lista sempre as turmas por diretor_turma_id,
+// não pela seleção) podia mostrar uma turma em que depois se batia em
+// "Não tens acesso a esta turma". Reflete no cliente a mesma regra
+// aplicada a sério no RLS em db/add_dt_acesso_avaliacoes.sql.
 function canAccessTurma(professor, turma, minhasTurmaIds = []) {
-  return isAdmin(professor) || minhasTurmaIds.includes(turma.id);
+  return isAdmin(professor) || minhasTurmaIds.includes(turma.id) || isDiretorDaTurma(professor, turma);
 }
 
 // Quem vê tudo sobre o aluno (encarregados, acompanhamento, reuniões,
