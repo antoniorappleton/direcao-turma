@@ -1959,6 +1959,8 @@ body.dt-workspace main.app-container {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .dt-aval-body {
