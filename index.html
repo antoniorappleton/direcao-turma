@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.14" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.15" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -30,7 +30,7 @@
       </a>
       <nav class="nav-menu">
         <a href="index.html" class="active">Painel DT</a>
-        <a href="minhas-turmas.html">As minhas turmas</a>
+        <a href="turmas-leciono.html">Turmas que leciono</a>
         <a href="perfil.html">Perfil</a>
         <button id="signOutBtn">Sair</button>
       </nav>
@@ -39,7 +39,7 @@
     <main class="app-container dt-dashboard">
       <section class="dt-page-heading">
         <div>
-          <div class="dt-eyebrow">Comunidade CSJ Ramalhão</div>
+          <div class="dt-role-pill">Direção de Turma</div>
           <h2 id="turmasTitulo">Painel da Direção de Turma</h2>
           <p id="welcomeMsg"></p>
         </div>
@@ -50,7 +50,7 @@
       </section>
 
       <section class="dt-metrics" aria-label="Resumo da Direção de Turma">
-        <div class="dt-metric"><span>Turmas atribuídas</span><strong id="metricTurmas">—</strong></div>
+        <div class="dt-metric"><span>Turmas que dirijo</span><strong id="metricTurmas">—</strong></div>
         <div class="dt-metric"><span>Alunos acompanhados</span><strong id="metricAlunos">—</strong></div>
         <div class="dt-metric dt-metric-attention"><span>Seguimentos pendentes</span><strong id="metricSeguimentos">—</strong></div>
         <div class="dt-metric"><span>Reuniões por tratar</span><strong id="metricReunioes">—</strong></div>
@@ -74,8 +74,8 @@
           <section class="dt-section dt-classes-section">
             <div class="dt-section-heading">
               <div>
-                <div class="dt-eyebrow">Acesso rápido</div>
-                <h2 id="turmasSectionTitle">As minhas turmas</h2>
+                <div class="dt-eyebrow">Direção de turma</div>
+                <h2 id="turmasSectionTitle">Turmas que dirijo</h2>
               </div>
               <button id="toggleTurmasBtn" class="btn btn-secondary" style="display: none"></button>
             </div>
@@ -111,7 +111,7 @@
     </div>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.14
+      made by antonio.appleton | Departamento de Programação · v1.1.15
     </footer>
 
     <script>
@@ -139,8 +139,11 @@
 
         function render(turmas) {
           if (!turmas.length) {
-            listEl.innerHTML =
-              '<div class="admin-list-item" style="color: var(--text-muted)">Ainda não és diretor de turma de nenhuma turma.</div>';
+            listEl.innerHTML = `
+              <div class="dt-empty-state-cta">
+                <p>Ainda não és diretor de turma de nenhuma turma este ano letivo.</p>
+                <a href="turmas-leciono.html" class="btn btn-secondary">Ver as turmas que leciono</a>
+              </div>`;
             return;
           }
           listEl.innerHTML = turmas
@@ -158,27 +161,28 @@
         try {
           const todasTurmas = await TurmasService.getAll();
 
-          // "As minhas turmas" é sempre a seleção do próprio em
-          // professor_turmas (ver minhas-turmas.html) — também para admins:
-          // isAdmin só dá acesso a QUALQUER turma (canAccessTurma) e à opção
-          // de ver todas abaixo, não substitui a seleção pessoal por tudo.
+          // O Painel DT exige sempre a configuração inicial de "Turmas que
+          // leciono" (professor_turmas) antes de mostrar o que for — mas o
+          // que mostra a partir daí são só as turmas de que é realmente
+          // diretor (turmas.diretor_turma_id), nunca as lecionadas: essa
+          // distinção é propositada, ver isDiretorDaTurma em permissions.js.
           const minhasTurmaIds = await ProfessorTurmasService.getIdsByProfessor(professor.id);
           if (!minhasTurmaIds.length && !isAdmin(professor)) {
             window.location.href = "minhas-turmas.html?primeira=1";
             return;
           }
-          const minhasTurmas = todasTurmas.filter((t) => minhasTurmaIds.includes(t.id));
-          document.getElementById("metricTurmas").textContent = minhasTurmas.length;
+          const dtTurmas = todasTurmas.filter((t) => isDiretorDaTurma(professor, t));
+          document.getElementById("metricTurmas").textContent = dtTurmas.length;
 
           let aMostrarTodas = false;
-          render(minhasTurmas);
+          render(dtTurmas);
 
           // Calendário: reuniões agendadas/confirmadas + seguimentos
           // pendentes, de todos os alunos das turmas de que sou DT.
           // Try/catch próprio: um erro aqui não deve impedir a lista de
           // turmas (já renderizada) de continuar visível.
           try {
-          const turmaIdsCalendario = minhasTurmas.map((t) => t.id);
+          const turmaIdsCalendario = dtTurmas.map((t) => t.id);
           const alunosCalendario = await AlunosService.getByTurmas(turmaIdsCalendario);
           const alunoIdsCalendario = alunosCalendario.map((a) => a.id);
           document.getElementById("metricAlunos").textContent = alunosCalendario.length;
@@ -404,13 +408,13 @@
           if (isAdmin(professor)) {
             toggleBtn.style.display = "inline-flex";
             const atualizarToggle = () => {
-              toggleBtn.textContent = aMostrarTodas ? "Ver só as minhas turmas" : "Ver todas as turmas";
-              document.getElementById("turmasSectionTitle").textContent = aMostrarTodas ? "Todas as turmas" : "As minhas turmas";
+              toggleBtn.textContent = aMostrarTodas ? "Ver só as que dirijo" : "Ver todas as turmas";
+              document.getElementById("turmasSectionTitle").textContent = aMostrarTodas ? "Todas as turmas" : "Turmas que dirijo";
             };
             atualizarToggle();
             toggleBtn.addEventListener("click", () => {
               aMostrarTodas = !aMostrarTodas;
-              render(aMostrarTodas ? todasTurmas : minhasTurmas);
+              render(aMostrarTodas ? todasTurmas : dtTurmas);
               atualizarToggle();
             });
           }

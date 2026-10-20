@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Turma — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.14" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.15" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -30,7 +30,7 @@
       </a>
       <nav class="nav-menu">
         <a href="index.html">Painel DT</a>
-        <a href="minhas-turmas.html">As minhas turmas</a>
+        <a href="turmas-leciono.html">Turmas que leciono</a>
         <a href="perfil.html">Perfil</a>
         <button id="signOutBtn">Sair</button>
       </nav>
@@ -41,7 +41,7 @@
       <div id="turmaContent" style="display: none">
         <div class="dt-page-heading dt-class-heading">
           <div>
-            <a href="index.html" class="dt-breadcrumb">Painel DT <span aria-hidden="true">/</span> A minha turma</a>
+            <a id="voltarBreadcrumb" href="index.html" class="dt-breadcrumb">Painel DT <span aria-hidden="true">/</span> Turma</a>
             <div class="dt-eyebrow">Visão geral da turma</div>
             <h2 id="turmaTitulo"></h2>
             <p id="turmaSubtitulo"></p>
@@ -376,7 +376,7 @@
     </div>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.14
+      made by antonio.appleton | Departamento de Programação · v1.1.15
     </footer>
 
     <script>
@@ -386,11 +386,21 @@
 
         document.getElementById("signOutBtn")?.addEventListener("click", signOut);
 
-        const turmaId = new URLSearchParams(location.search).get("id");
+        const params = new URLSearchParams(location.search);
+        const turmaId = params.get("id");
         const loadingEl = document.getElementById("loadingMsg");
         if (!turmaId) {
           loadingEl.textContent = "Turma não indicada.";
           return;
+        }
+
+        // A turma é acedida a partir de dois painéis distintos (Painel DT e
+        // Turmas que leciono) — a fonte vem na query string (?from=leciono)
+        // para o "voltar" levar sempre para onde a pessoa realmente estava.
+        if (params.get("from") === "leciono") {
+          const breadcrumbEl = document.getElementById("voltarBreadcrumb");
+          breadcrumbEl.href = "turmas-leciono.html";
+          breadcrumbEl.innerHTML = 'Turmas que leciono <span aria-hidden="true">/</span> Turma';
         }
 
         const professor = await getCurrentProfessor();

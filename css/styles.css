@@ -1122,6 +1122,50 @@ body.dt-workspace main.app-container {
   text-transform: uppercase;
 }
 
+/* Identifica de forma inequívoca qual dos dois painéis (Direção de Turma vs.
+   Turmas que leciono) está aberto — mesma cor usada no resto do painel DT
+   (primary) ou no selo "DT" já existente (secondary), para que a distinção
+   seja consistente em toda a app, não só nesta página. */
+.dt-role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+}
+
+.dt-role-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.dt-role-pill--prof {
+  background: #f8e9e3;
+  color: var(--secondary);
+}
+
+.dt-empty-state-cta {
+  padding: 26px 4px;
+  text-align: center;
+}
+
+.dt-empty-state-cta p {
+  margin: 0 0 14px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 .dt-heading-meta,
 .dt-class-heading-side {
   display: flex;
@@ -1316,6 +1360,28 @@ body.dt-workspace main.app-container {
   color: var(--primary);
   font-size: 13px;
   font-weight: 700;
+}
+
+/* Painel "Turmas que leciono" — mesmo papel que .dt-class-mark, mas na cor
+   secundária para nunca se confundir visualmente com o painel DT. */
+.dt-class-mark--prof {
+  background: #f8e9e3;
+  color: var(--secondary);
+}
+
+.dt-class-dt-tag {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
 }
 
 .dt-class-arrow {
