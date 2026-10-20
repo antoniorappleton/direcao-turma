@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Turma — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.15" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.17" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
     <script src="js/core/auth.js"></script>
     <script src="js/core/permissions.js"></script>
     <script src="js/utils/dates.js"></script>
+    <script src="js/utils/importar-avaliacoes.js"></script>
     <script src="js/services/turmas.service.js"></script>
     <script src="js/services/alunos.service.js"></script>
     <script src="js/services/professor-turmas.service.js"></script>
@@ -125,6 +127,7 @@
           <div class="dt-aval-header-actions">
             <button id="addAvaliacaoBtn" class="btn btn-primary">+ Registar avaliação</button>
             <button id="addAvaliacaoLoteBtn" class="btn btn-secondary">+ Registar em lote</button>
+            <button id="importarAvaliacoesBtn" class="btn btn-secondary" title="Cola ou carrega uma tabela com Saber Ser/Saber Fazer/Saber Saber/Nota/Comentário por disciplina">Importar de Excel</button>
             <button id="exportarRelatorioBtn" class="btn btn-secondary" title="Gera um relatório de avaliação intercalar (um por aluno) para o período selecionado no filtro">Exportar relatório da turma</button>
             <button id="closeAvaliacoesBtn" class="icon-btn" title="Fechar" aria-label="Fechar">✕</button>
           </div>
@@ -271,6 +274,21 @@
             <input type="number" id="avalPeso" class="form-control" step="1" min="0" max="100" />
           </div>
 
+          <div id="avalDominiosGroup" class="form-row" style="display: none">
+            <div class="form-group">
+              <label for="avalSaberSer">Saber Ser</label>
+              <input type="number" id="avalSaberSer" class="form-control" step="0.1" />
+            </div>
+            <div class="form-group">
+              <label for="avalSaberFazer">Saber Fazer</label>
+              <input type="number" id="avalSaberFazer" class="form-control" step="0.1" />
+            </div>
+            <div class="form-group">
+              <label for="avalSaberSaber">Saber Saber</label>
+              <input type="number" id="avalSaberSaber" class="form-control" step="0.1" />
+            </div>
+          </div>
+
           <div class="form-group">
             <label for="avalObservacao">Observação (opcional)</label>
             <textarea id="avalObservacao" class="form-control" rows="3"></textarea>
@@ -376,8 +394,82 @@
       </div>
     </div>
 
+    <div id="avaliacaoImportarOverlay" class="dt-modal-overlay">
+      <div class="dt-modal dt-modal--full" role="dialog" aria-modal="true" aria-labelledby="avaliacaoImportarTitle">
+        <div class="dt-aval-header">
+          <div>
+            <div class="dt-eyebrow">Avaliações</div>
+            <h2 id="avaliacaoImportarTitle" style="margin: 2px 0 0">Importar avaliações intercalares de Excel</h2>
+          </div>
+          <div class="dt-aval-header-actions">
+            <button type="button" id="closeAvaliacaoImportarBtn" class="icon-btn" title="Fechar" aria-label="Fechar">✕</button>
+          </div>
+        </div>
+
+        <div class="dt-aval-body">
+          <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 14px">
+            Cola abaixo os dados copiados do Excel (Ctrl+C na folha, Ctrl+V aqui) ou carrega o ficheiro .xlsx/.csv. Formato
+            esperado: 1.ª coluna com "número aluno" (ex: "604 Maria Silva"), seguida de um bloco de 5 colunas por disciplina —
+            Saber Ser, Saber Fazer, Saber Saber, Nota Final, Comentário — sempre pela mesma ordem (ver testeAvaliações.xlsx).
+          </p>
+
+          <div class="form-group">
+            <label for="importColarTexto">Colar dados</label>
+            <textarea id="importColarTexto" class="form-control" rows="4" placeholder="Cola aqui (Ctrl+V) os dados copiados do Excel…"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="importFicheiro">...ou carregar ficheiro (.xlsx, .xls, .csv)</label>
+            <input type="file" id="importFicheiro" accept=".xlsx,.xls,.csv" class="form-control" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="importPeriodo">Período</label>
+              <select id="importPeriodo" class="form-control">
+                <option value="1">1.º Período</option>
+                <option value="2">2.º Período</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="importData">Data</label>
+              <input type="date" id="importData" class="form-control" />
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin: 4px 0 16px">
+            <button type="button" id="importAnalisarBtn" class="btn btn-primary">Analisar dados</button>
+          </div>
+
+          <div id="importMsg"></div>
+
+          <div id="importMapeamentoSection" style="display: none">
+            <h3 class="app-card-title" style="margin-bottom: 6px">Disciplina de cada bloco de colunas</h3>
+            <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 10px">
+              O ficheiro não indica o nome da disciplina de cada bloco — indica abaixo a qual corresponde cada um (pela ordem
+              das colunas). Deixa em branco para ignorar esse bloco.
+            </p>
+            <div id="importMapeamentoList" class="dt-lote-alunos-list" style="max-height: 220px"></div>
+            <div style="display: flex; gap: 8px; margin: 14px 0 16px">
+              <button type="button" id="importPreviewBtn" class="btn btn-secondary">Atualizar pré-visualização</button>
+            </div>
+          </div>
+
+          <div id="importPreviewSection" style="display: none">
+            <h3 class="app-card-title" style="margin-bottom: 6px">Pré-visualização</h3>
+            <div id="importPreviewResumo" style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px"></div>
+            <div id="importPreviewList" class="admin-list-container" style="max-height: 320px"></div>
+            <div style="display: flex; gap: 8px; margin-top: 16px">
+              <button type="button" id="importConfirmarBtn" class="btn btn-primary">Importar avaliações</button>
+              <button type="button" id="cancelarAvalImportarBtn" class="btn btn-secondary">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.16
+      made by antonio.appleton | Departamento de Programação · v1.1.17
     </footer>
 
     <script>
@@ -663,6 +755,10 @@
                     const badge = isEscala20(a)
                       ? `<span class="badge ${a.nota >= 10 ? "badge-positiva" : "badge-negativa"}">${notaTxt}</span>`
                       : `<span class="badge badge-neutral">${notaTxt}</span>`;
+                    const temDominios = [a.saber_ser, a.saber_fazer, a.saber_saber].some((v) => typeof v === "number");
+                    const dominiosTxt = temDominios
+                      ? `Saber Ser ${typeof a.saber_ser === "number" ? formatNota(a.saber_ser) : "—"} · Saber Fazer ${typeof a.saber_fazer === "number" ? formatNota(a.saber_fazer) : "—"} · Saber Saber ${typeof a.saber_saber === "number" ? formatNota(a.saber_saber) : "—"}`
+                      : null;
                     return `
                     <div class="admin-list-item" data-id="${a.id}">
                       <div>
@@ -672,6 +768,7 @@
                             .filter(Boolean)
                             .join(" · ")}
                         </span>
+                        ${dominiosTxt ? `<span style="color: var(--text-muted); font-size: 12px; display: block">${dominiosTxt}</span>` : ""}
                       </div>
                       <div style="display: flex; align-items: center; gap: 8px">
                         ${badge}
@@ -831,14 +928,22 @@
                   .sort((a, b) => a.disciplina.localeCompare(b.disciplina, "pt"));
                 const mediaAluno = media(registos.filter(isEscala20).map((r) => r.nota));
                 const linhas = registos
-                  .map(
-                    (r) => `
+                  .map((r) => {
+                    const temDominios = [r.saber_ser, r.saber_fazer, r.saber_saber].some((v) => typeof v === "number");
+                    const dominiosHtml = temDominios
+                      ? `<div class="rel-dominios">
+                          <span>Saber Ser: ${typeof r.saber_ser === "number" ? formatNota(r.saber_ser) : "—"}</span>
+                          <span>Saber Fazer: ${typeof r.saber_fazer === "number" ? formatNota(r.saber_fazer) : "—"}</span>
+                          <span>Saber Saber: ${typeof r.saber_saber === "number" ? formatNota(r.saber_saber) : "—"}</span>
+                        </div>`
+                      : "";
+                    return `
                   <tr>
-                    <td>${escapeHtml(r.disciplina)}</td>
+                    <td>${escapeHtml(r.disciplina)}${dominiosHtml}</td>
                     <td class="rel-col-nota">${typeof r.nota === "number" ? formatNota(r.nota) : "—"}</td>
                     <td>${escapeHtml(r.observacao || "")}</td>
-                  </tr>`,
-                  )
+                  </tr>`;
+                  })
                   .join("");
                 return `
                 <section class="rel-pagina">
@@ -886,6 +991,7 @@
                   .rel-tabela th, .rel-tabela td { border: 1px solid #999; padding: 8px 10px; text-align: left; vertical-align: top; }
                   .rel-tabela th { background: #f0f0f0; }
                   .rel-col-nota { width: 70px; text-align: center; }
+                  .rel-dominios { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; font-size: 11px; color: #555; font-weight: normal; }
                   .rel-media { display: flex; justify-content: flex-end; gap: 10px; font-size: 14px; margin: 14px 2px; }
                   .rel-assinaturas { display: flex; justify-content: space-between; gap: 40px; margin-top: 56px; }
                   .rel-assinatura { flex: 1; text-align: center; font-size: 12px; color: #333; }
@@ -913,14 +1019,209 @@
 
           document.getElementById("exportarRelatorioBtn").addEventListener("click", gerarRelatorioTurma);
 
+          // Importação em massa de avaliações intercalares a partir de Excel
+          // (colado ou carregado) — ver app/js/utils/importar-avaliacoes.js
+          // para o parsing/matching puro; aqui é só a ligação à UI e ao
+          // Supabase.
+          const avaliacaoImportarOverlayEl = document.getElementById("avaliacaoImportarOverlay");
+          const importMapeamentoSectionEl = document.getElementById("importMapeamentoSection");
+          const importMapeamentoListEl = document.getElementById("importMapeamentoList");
+          const importPreviewSectionEl = document.getElementById("importPreviewSection");
+          const importPreviewResumoEl = document.getElementById("importPreviewResumo");
+          const importPreviewListEl = document.getElementById("importPreviewList");
+          const importMsgEl = document.getElementById("importMsg");
+
+          let importDadosLinhas = []; // linhas de dados (sem cabeçalho)
+          let importRegistosPreview = [];
+
+          function abrirAvaliacaoImportarOverlay() {
+            document.getElementById("importColarTexto").value = "";
+            document.getElementById("importFicheiro").value = "";
+            document.getElementById("importData").value = new Date().toISOString().slice(0, 10);
+            importMsgEl.innerHTML = "";
+            importMapeamentoSectionEl.style.display = "none";
+            importPreviewSectionEl.style.display = "none";
+            importDadosLinhas = [];
+            importRegistosPreview = [];
+            avaliacaoImportarOverlayEl.classList.add("aberto");
+          }
+
+          function fecharAvaliacaoImportarOverlay() {
+            avaliacaoImportarOverlayEl.classList.remove("aberto");
+          }
+
+          document.getElementById("importarAvaliacoesBtn").addEventListener("click", abrirAvaliacaoImportarOverlay);
+          document.getElementById("closeAvaliacaoImportarBtn").addEventListener("click", fecharAvaliacaoImportarOverlay);
+          document.getElementById("cancelarAvalImportarBtn").addEventListener("click", fecharAvaliacaoImportarOverlay);
+          avaliacaoImportarOverlayEl.addEventListener("click", (event) => {
+            if (event.target === avaliacaoImportarOverlayEl) fecharAvaliacaoImportarOverlay();
+          });
+
+          function lerFicheiroComoLinhas(ficheiro) {
+            return new Promise((resolve, reject) => {
+              const leitor = new FileReader();
+              leitor.onload = () => {
+                try {
+                  const dados = new Uint8Array(leitor.result);
+                  const livro = XLSX.read(dados, { type: "array" });
+                  const folha = livro.Sheets[livro.SheetNames[0]];
+                  resolve(XLSX.utils.sheet_to_json(folha, { header: 1, raw: true, defval: null }));
+                } catch (err) {
+                  reject(err);
+                }
+              };
+              leitor.onerror = () => reject(leitor.error);
+              leitor.readAsArrayBuffer(ficheiro);
+            });
+          }
+
+          // Lista de disciplinas já conhecidas desta turma (mesma fonte do
+          // datalist do formulário individual) — usada só como sugestão
+          // inicial no mapeamento de blocos, o DT pode sempre corrigir.
+          function disciplinasConhecidas() {
+            return Array.from(avalDisciplinasListEl.querySelectorAll("option")).map((o) => o.value);
+          }
+
+          function renderMapeamentoBlocos(numBlocos) {
+            const sugestoes = disciplinasConhecidas();
+            importMapeamentoListEl.innerHTML = Array.from({ length: numBlocos })
+              .map((_, i) => {
+                const sugestao = sugestoes.length === numBlocos ? sugestoes[i] : "";
+                return `
+                <div class="dt-lote-aluno-row">
+                  <span class="dt-lote-aluno-nome">Bloco ${i + 1}</span>
+                  <input type="text" class="form-control import-bloco-disciplina" list="avalDisciplinasList" data-bloco="${i}" value="${escapeHtml(sugestao)}" placeholder="Disciplina (ou deixa em branco para ignorar)" />
+                </div>`;
+              })
+              .join("");
+          }
+
+          document.getElementById("importAnalisarBtn").addEventListener("click", async () => {
+            importMsgEl.innerHTML = "";
+            importMapeamentoSectionEl.style.display = "none";
+            importPreviewSectionEl.style.display = "none";
+
+            const ficheiro = document.getElementById("importFicheiro").files[0];
+            const texto = document.getElementById("importColarTexto").value;
+
+            try {
+              const linhas = ficheiro ? await lerFicheiroComoLinhas(ficheiro) : ImportarAvaliacoes.parseTextoColado(texto);
+              if (!linhas || linhas.length < 2) {
+                importMsgEl.innerHTML = '<div class="alert alert-error">Não há dados suficientes — cola o texto copiado do Excel ou carrega um ficheiro, incluindo a linha de cabeçalho.</div>';
+                return;
+              }
+              const numBlocos = ImportarAvaliacoes.contarBlocos(linhas);
+              if (!numBlocos) {
+                importMsgEl.innerHTML = '<div class="alert alert-error">Não foi possível identificar blocos de disciplina (Saber Ser/Saber Fazer/Saber Saber/Nota Final/Comentário). Confirma o formato dos dados.</div>';
+                return;
+              }
+              importDadosLinhas = linhas.slice(1);
+              renderMapeamentoBlocos(numBlocos);
+              importMapeamentoSectionEl.style.display = "block";
+              importMsgEl.innerHTML = `<div class="alert alert-success">${importDadosLinhas.length} linha${importDadosLinhas.length === 1 ? "" : "s"} de alunos e ${numBlocos} bloco${numBlocos === 1 ? "" : "s"} de disciplina encontrados. Confirma a disciplina de cada bloco abaixo.</div>`;
+            } catch (err) {
+              console.error(err);
+              importMsgEl.innerHTML = '<div class="alert alert-error">Erro ao ler os dados. Confirma o formato do ficheiro/texto colado.</div>';
+            }
+          });
+
+          document.getElementById("importPreviewBtn").addEventListener("click", () => {
+            const periodo = document.getElementById("importPeriodo").value;
+            const data = document.getElementById("importData").value;
+            if (!data) {
+              importMsgEl.innerHTML = '<div class="alert alert-error">Indica a data da avaliação.</div>';
+              return;
+            }
+            const disciplinasPorBloco = Array.from(importMapeamentoListEl.querySelectorAll(".import-bloco-disciplina")).map(
+              (input) => input.value.trim() || null,
+            );
+            if (!disciplinasPorBloco.some(Boolean)) {
+              importMsgEl.innerHTML = '<div class="alert alert-error">Indica a disciplina de pelo menos um bloco.</div>';
+              return;
+            }
+
+            const { registos, linhasIgnoradas } = ImportarAvaliacoes.construirRegistos({
+              linhasDados: importDadosLinhas,
+              disciplinasPorBloco,
+              alunos,
+              turmaId,
+              periodo,
+              data,
+              criadoPor: professor?.id || null,
+            });
+
+            importRegistosPreview = registos;
+
+            const alunosEnvolvidos = new Set(registos.map((r) => r.aluno_id)).size;
+            const avisoIgnoradas = linhasIgnoradas.length
+              ? ` ⚠ ${linhasIgnoradas.length} linha${linhasIgnoradas.length === 1 ? "" : "s"} ignorada${linhasIgnoradas.length === 1 ? "" : "s"} por não encontrar o aluno (${linhasIgnoradas.map((l) => `"${l.texto}"`).join(", ")}).`
+              : "";
+            importPreviewResumoEl.innerHTML = `${registos.length} avaliaç${registos.length === 1 ? "ão" : "ões"} de ${alunosEnvolvidos} aluno${alunosEnvolvidos === 1 ? "" : "s"} prontas a importar.${avisoIgnoradas}`;
+
+            importPreviewListEl.innerHTML = registos.length
+              ? registos
+                  .map(
+                    (r, i) => `
+                  <div class="admin-list-item" data-index="${i}">
+                    <div>
+                      <strong>${escapeHtml(r.aluno_nome)}</strong>
+                      <span style="color: var(--text-muted); font-size: 12px; display: block">
+                        ${escapeHtml(r.disciplina)} · Nota: ${typeof r.nota === "number" ? formatNota(r.nota) : "—"}
+                        ${[r.saber_ser, r.saber_fazer, r.saber_saber].some((v) => typeof v === "number") ? ` · Saber Ser/Fazer/Saber: ${r.saber_ser ?? "—"}/${r.saber_fazer ?? "—"}/${r.saber_saber ?? "—"}` : ""}
+                        ${r.observacao ? ` · ${escapeHtml(r.observacao.slice(0, 80))}${r.observacao.length > 80 ? "…" : ""}` : ""}
+                      </span>
+                    </div>
+                    <button type="button" class="icon-btn danger remover-import-btn" title="Remover da importação">✕</button>
+                  </div>`,
+                  )
+                  .join("")
+              : '<div class="admin-list-item" style="color: var(--text-muted)">Sem registos para importar com este mapeamento.</div>';
+
+            importPreviewSectionEl.style.display = "block";
+          });
+
+          importPreviewListEl.addEventListener("click", (event) => {
+            const item = event.target.closest(".admin-list-item[data-index]");
+            if (!item || !event.target.closest(".remover-import-btn")) return;
+            const indice = Number(item.dataset.index);
+            importRegistosPreview.splice(indice, 1);
+            item.remove();
+            importPreviewListEl.querySelectorAll(".admin-list-item[data-index]").forEach((el, i) => (el.dataset.index = i));
+            importPreviewResumoEl.textContent = `${importRegistosPreview.length} avaliaç${importRegistosPreview.length === 1 ? "ão" : "ões"} prontas a importar.`;
+          });
+
+          document.getElementById("importConfirmarBtn").addEventListener("click", async () => {
+            if (!importRegistosPreview.length) {
+              importMsgEl.innerHTML = '<div class="alert alert-error">Não há registos para importar.</div>';
+              return;
+            }
+            try {
+              const paraInserir = importRegistosPreview.map(({ aluno_nome, ...resto }) => resto);
+              await AvaliacoesService.createMany(paraInserir);
+              fecharAvaliacaoImportarOverlay();
+              await carregarAvaliacoes();
+            } catch (err) {
+              console.error(err);
+              importMsgEl.innerHTML = '<div class="alert alert-error">Erro ao importar avaliações.</div>';
+            }
+          });
+
+          const avalDominiosGroupEl = document.getElementById("avalDominiosGroup");
+
+          function atualizarDominiosVisiveis() {
+            avalDominiosGroupEl.style.display = avalTipoEl.value === "intercalar" ? "flex" : "none";
+          }
+
           function atualizarOpcaoIntercalar() {
             const periodo = avalPeriodoFormEl.value;
             const permitido = periodo === "1" || periodo === "2";
             avalTipoIntercalarOptEl.disabled = !permitido;
             if (!permitido && avalTipoEl.value === "intercalar") avalTipoEl.value = "teste";
+            atualizarDominiosVisiveis();
           }
 
           avalPeriodoFormEl.addEventListener("change", atualizarOpcaoIntercalar);
+          avalTipoEl.addEventListener("change", atualizarDominiosVisiveis);
 
           function abrirAvaliacaoForm() {
             document.getElementById("avaliacaoForm").reset();
@@ -989,7 +1290,8 @@
 
           document.addEventListener("keydown", (event) => {
             if (event.key !== "Escape") return;
-            if (avaliacaoLoteOverlayEl.classList.contains("aberto")) fecharAvaliacaoLoteForm();
+            if (avaliacaoImportarOverlayEl.classList.contains("aberto")) fecharAvaliacaoImportarOverlay();
+            else if (avaliacaoLoteOverlayEl.classList.contains("aberto")) fecharAvaliacaoLoteForm();
             else if (avaliacaoFormOverlayEl.classList.contains("aberto")) fecharAvaliacaoForm();
             else if (avaliacoesOverlayEl.classList.contains("aberto")) fecharAvaliacoesOverlay();
           });
@@ -1054,17 +1356,25 @@
             event.preventDefault();
             const msgEl = document.getElementById("avalFormMsg");
             const nota = parseFloat(document.getElementById("avalNota").value);
+            const numeroOuNull = (id) => {
+              const v = document.getElementById(id).value;
+              return v ? Number(v) : null;
+            };
+            const tipo = avalTipoEl.value;
             const payload = {
               aluno_id: avalAlunoEl.value,
               turma_id: turmaId,
               disciplina: document.getElementById("avalDisciplina").value.trim(),
               periodo: Number(avalPeriodoFormEl.value),
-              tipo: avalTipoEl.value,
+              tipo,
               titulo: document.getElementById("avalTitulo").value.trim(),
               data: document.getElementById("avalData").value,
               nota: Number.isFinite(nota) ? nota : null,
               escala: document.getElementById("avalEscala").value.trim() || "0-20",
               peso: document.getElementById("avalPeso").value ? Number(document.getElementById("avalPeso").value) : null,
+              saber_ser: tipo === "intercalar" ? numeroOuNull("avalSaberSer") : null,
+              saber_fazer: tipo === "intercalar" ? numeroOuNull("avalSaberFazer") : null,
+              saber_saber: tipo === "intercalar" ? numeroOuNull("avalSaberSaber") : null,
               observacao: document.getElementById("avalObservacao").value.trim() || null,
               criado_por: professor?.id || null,
             };

@@ -1,4 +1,4 @@
-const CACHE_NAME = "direcao-turma-v37";
+const CACHE_NAME = "direcao-turma-v38";
 const PRECACHE = [
   "./",
   "index.html",
@@ -9,7 +9,7 @@ const PRECACHE = [
   "minhas-turmas.html",
   "turmas-leciono.html",
   "perfil.html",
-  "css/styles.css?v=1.1.15",
+  "css/styles.css?v=1.1.17",
   "js/core/config.js",
   "js/core/session.js",
   "js/core/auth.js",
@@ -28,11 +28,13 @@ const PRECACHE = [
   "js/services/scriptorium.service.js",
   "js/services/tarefas.service.js",
   "js/utils/dates.js",
+  "js/utils/importar-avaliacoes.js",
   "manifest.json",
   "assets/logo.png",
   "assets/app-icon-192.png",
   "assets/app-icon-512.png",
   "https://cdn.jsdelivr.net/npm/@supabase/supabase-js",
+  "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
 ];
 
 self.addEventListener("install", (event) => {
