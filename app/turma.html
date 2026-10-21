@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Turma — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.17" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.18" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
     <script src="js/core/auth.js"></script>
@@ -169,6 +170,7 @@
             <button type="button" class="ativo" data-view="lista">Avaliações</button>
             <button type="button" data-view="evolucao">Evolução</button>
             <button type="button" data-view="historico">Histórico</button>
+            <button type="button" data-view="dashboard">Dashboard</button>
           </nav>
 
           <section id="avalViewLista" class="dt-aval-view ativo">
@@ -201,6 +203,29 @@
               </thead>
               <tbody id="historicoTableBody"></tbody>
             </table>
+          </section>
+
+          <section id="avalViewDashboard" class="dt-aval-view">
+            <div class="dt-dash-grid">
+              <div class="dt-dash-card">
+                <div class="dt-dash-card-title">Média por período</div>
+                <div class="dt-dash-canvas-wrap"><canvas id="chartMediaPeriodo"></canvas></div>
+              </div>
+              <div class="dt-dash-card">
+                <div class="dt-dash-card-title">Positivas vs. negativas</div>
+                <div class="dt-dash-canvas-wrap dt-dash-canvas-wrap--sm"><canvas id="chartPositivasNegativas"></canvas></div>
+                <div id="dashPositivasLegenda" class="dt-dash-legend"></div>
+              </div>
+              <div class="dt-dash-card dt-dash-card--wide">
+                <div class="dt-dash-card-title">Média por disciplina</div>
+                <div class="dt-dash-canvas-wrap dt-dash-canvas-wrap--lg"><canvas id="chartMediaDisciplina"></canvas></div>
+              </div>
+              <div class="dt-dash-card dt-dash-card--wide">
+                <div class="dt-dash-card-title">Comparação entre períodos, por disciplina</div>
+                <div class="dt-dash-canvas-wrap dt-dash-canvas-wrap--lg"><canvas id="chartComparacaoPeriodos"></canvas></div>
+              </div>
+            </div>
+            <p id="dashSemDados" class="dt-dash-empty" style="display: none">Sem avaliações para os filtros selecionados.</p>
           </section>
         </div>
       </div>
@@ -826,11 +851,206 @@
               : `<tr><td colspan="4" style="color: var(--text-muted)">Sem dados para mostrar.</td></tr>`;
           }
 
+          // Dashboard de avaliações — gráficos sobre os mesmos dados/filtros
+          // dos restantes separadores (ver filtrar/media/isEscala20, acima).
+          // Cores fixas (não vêm do tema): o verde/terracota da marca (--primary/
+          // --secondary) falham os testes de contraste e de "lê-se como cinza"
+          // para marcas de gráfico (validate_palette.js da skill de dataviz),
+          // por isso os períodos usam uma trinca azul/laranja/verde-água
+          // validada para daltonismo; positivas/negativas usam a paleta de
+          // estado (verde/vermelho), nunca reutilizada para outras séries.
+          const DASH_COR_PERIODO = { 1: "#2a78d6", 2: "#eb6834", 3: "#1baf7a" };
+          const DASH_COR_SERIE = "#2a78d6";
+          const DASH_COR_POSITIVA = "#0ca30c";
+          const DASH_COR_NEGATIVA = "#d03b3b";
+
+          function dashCssVar(nome) {
+            return getComputedStyle(document.body).getPropertyValue(nome).trim();
+          }
+
+          if (window.Chart) {
+            Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+            Chart.defaults.color = dashCssVar("--text-muted");
+            Chart.defaults.plugins.tooltip.backgroundColor = "#20332f";
+            Chart.defaults.plugins.tooltip.titleColor = "#fff";
+            Chart.defaults.plugins.tooltip.bodyColor = "#fff";
+            Chart.defaults.plugins.tooltip.cornerRadius = 6;
+            Chart.defaults.plugins.tooltip.padding = 8;
+          }
+
+          // Plugin mínimo para legendas diretas sobre as barras (em vez de
+          // depender de chartjs-plugin-datalabels só para isto).
+          const dashValueLabels = {
+            id: "dashValueLabels",
+            afterDatasetsDraw(chart) {
+              const { ctx } = chart;
+              ctx.save();
+              ctx.font = `600 11px ${getComputedStyle(document.body).fontFamily}`;
+              ctx.fillStyle = dashCssVar("--text-main");
+              chart.data.datasets.forEach((dataset, di) => {
+                const meta = chart.getDatasetMeta(di);
+                if (meta.hidden) return;
+                meta.data.forEach((elemento, i) => {
+                  const valor = dataset.data[i];
+                  if (valor === null || valor === undefined) return;
+                  const texto = formatNota(valor);
+                  const pos = elemento.tooltipPosition();
+                  if (chart.config.options.indexAxis === "y") {
+                    ctx.textAlign = "left";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(texto, pos.x + 6, pos.y);
+                  } else {
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "bottom";
+                    ctx.fillText(texto, pos.x, pos.y - 4);
+                  }
+                });
+              });
+              ctx.restore();
+            },
+          };
+
+          let chartMediaPeriodo = null;
+          let chartMediaDisciplina = null;
+          let chartComparacaoPeriodos = null;
+          let chartPositivasNegativas = null;
+
+          function dashGrid() {
+            return { color: dashCssVar("--surface-border"), drawTicks: false };
+          }
+
+          function renderDashboard() {
+            if (!window.Chart) return;
+            const avalViewDashboardEl = document.getElementById("avalViewDashboard");
+            if (!avalViewDashboardEl.classList.contains("ativo")) return;
+
+            const base = filtrar(avaliacoes, { ignorarPeriodo: true });
+            const comFiltroPeriodo = filtrar(avaliacoes);
+            document.getElementById("dashSemDados").style.display = base.length ? "none" : "block";
+
+            // 1) Média por período (ignora o filtro de período para poder comparar os três).
+            const porPeriodo = { 1: [], 2: [], 3: [] };
+            base.forEach((a) => {
+              if (isEscala20(a)) porPeriodo[a.periodo].push(a.nota);
+            });
+            const mediasPeriodo = [1, 2, 3].map((p) => media(porPeriodo[p]));
+
+            chartMediaPeriodo?.destroy();
+            chartMediaPeriodo = new Chart(document.getElementById("chartMediaPeriodo"), {
+              type: "bar",
+              data: {
+                labels: ["1.º Período", "2.º Período", "3.º Período"],
+                datasets: [{ data: mediasPeriodo, backgroundColor: DASH_COR_SERIE, borderRadius: 4, maxBarThickness: 56 }],
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                  y: { beginAtZero: true, max: 20, grid: dashGrid() },
+                  x: { grid: { display: false } },
+                },
+              },
+              plugins: [dashValueLabels],
+            });
+
+            // 2) Positivas vs. negativas (respeita todos os filtros, incl. período).
+            const notas20 = comFiltroPeriodo.filter(isEscala20).map((a) => a.nota);
+            const positivas = notas20.filter((n) => n >= 10).length;
+            const negativas = notas20.filter((n) => n < 10).length;
+            const totalNotas = positivas + negativas;
+
+            chartPositivasNegativas?.destroy();
+            chartPositivasNegativas = new Chart(document.getElementById("chartPositivasNegativas"), {
+              type: "doughnut",
+              data: {
+                labels: ["Positivas", "Negativas"],
+                datasets: [{ data: [positivas, negativas], backgroundColor: [DASH_COR_POSITIVA, DASH_COR_NEGATIVA], borderColor: "#fff", borderWidth: 2 }],
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+              },
+            });
+            const pct = (n) => (totalNotas ? Math.round((n / totalNotas) * 100) : 0);
+            document.getElementById("dashPositivasLegenda").innerHTML = totalNotas
+              ? `<span><i style="background:${DASH_COR_POSITIVA}"></i>Positivas: ${positivas} (${pct(positivas)}%)</span><span><i style="background:${DASH_COR_NEGATIVA}"></i>Negativas: ${negativas} (${pct(negativas)}%)</span>`
+              : "";
+
+            // 3) Média por disciplina (respeita o filtro de período, se escolhido).
+            const porDisciplinaSimples = new Map();
+            comFiltroPeriodo.forEach((a) => {
+              if (!isEscala20(a)) return;
+              if (!porDisciplinaSimples.has(a.disciplina)) porDisciplinaSimples.set(a.disciplina, []);
+              porDisciplinaSimples.get(a.disciplina).push(a.nota);
+            });
+            const linhasDisciplina = Array.from(porDisciplinaSimples.entries())
+              .map(([disciplina, notas]) => [disciplina, media(notas)])
+              .sort((a, b) => b[1] - a[1]);
+
+            chartMediaDisciplina?.destroy();
+            chartMediaDisciplina = new Chart(document.getElementById("chartMediaDisciplina"), {
+              type: "bar",
+              data: {
+                labels: linhasDisciplina.map(([d]) => d),
+                datasets: [{ data: linhasDisciplina.map(([, m]) => m), backgroundColor: DASH_COR_SERIE, borderRadius: 4, maxBarThickness: 22 }],
+              },
+              options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                  x: { beginAtZero: true, max: 20, grid: dashGrid() },
+                  y: { grid: { display: false } },
+                },
+              },
+              plugins: [dashValueLabels],
+            });
+
+            // 4) Comparação entre períodos, por disciplina (mesma agregação da vista "Evolução").
+            const porDisciplinaPeriodo = new Map();
+            base.forEach((a) => {
+              if (!porDisciplinaPeriodo.has(a.disciplina)) porDisciplinaPeriodo.set(a.disciplina, { 1: [], 2: [], 3: [] });
+              if (isEscala20(a)) porDisciplinaPeriodo.get(a.disciplina)[a.periodo].push(a.nota);
+            });
+            const disciplinasOrdenadas = Array.from(porDisciplinaPeriodo.keys()).sort((a, b) => a.localeCompare(b, "pt"));
+
+            chartComparacaoPeriodos?.destroy();
+            chartComparacaoPeriodos = new Chart(document.getElementById("chartComparacaoPeriodos"), {
+              type: "bar",
+              data: {
+                labels: disciplinasOrdenadas,
+                datasets: [1, 2, 3].map((p) => ({
+                  label: `${p}.º Período`,
+                  data: disciplinasOrdenadas.map((d) => media(porDisciplinaPeriodo.get(d)[p])),
+                  backgroundColor: DASH_COR_PERIODO[p],
+                  borderRadius: 4,
+                  borderColor: "#fff",
+                  borderWidth: 1,
+                })),
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: true, position: "top", labels: { usePointStyle: true, pointStyle: "rectRounded", boxWidth: 10 } },
+                },
+                scales: {
+                  y: { beginAtZero: true, max: 20, grid: dashGrid() },
+                  x: { grid: { display: false } },
+                },
+              },
+            });
+          }
+
           function renderAvaliacoesTudo() {
             renderResumo();
             renderLista();
             renderEvolucao();
             renderHistorico();
+            renderDashboard();
           }
 
           async function carregarAvaliacoes() {
@@ -869,6 +1089,7 @@
               btn.classList.add("ativo");
               document.querySelectorAll(".dt-aval-view").forEach((v) => v.classList.remove("ativo"));
               document.getElementById(`avalView${btn.dataset.view.charAt(0).toUpperCase()}${btn.dataset.view.slice(1)}`).classList.add("ativo");
+              if (btn.dataset.view === "dashboard") renderDashboard();
             });
           });
 
