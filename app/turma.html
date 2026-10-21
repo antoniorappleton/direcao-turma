@@ -438,6 +438,49 @@
             Saber Ser, Saber Fazer, Saber Saber, Nota Final, Comentário — sempre pela mesma ordem (ver testeAvaliações.xlsx).
           </p>
 
+          <details class="dt-import-exemplo">
+            <summary>Ver exemplo da melhor forma de preparar os dados para colar</summary>
+            <ul style="color: var(--text-muted); font-size: 13px; margin: 10px 0; padding-left: 18px">
+              <li><strong>Sem coluna de Turma.</strong> Esta importação já é feita dentro desta turma — se tiveres uma folha com
+                várias turmas misturadas (ex: "10.ºA1", "10.ºB1" na mesma tabela), separa-a antes por turma (filtra/copia só as
+                linhas de uma turma de cada vez) e repete "Colar dados" para cada uma. Uma folha com coluna de Turma desalinha
+                todos os blocos de disciplina em uma coluna.</li>
+              <li><strong>1.ª linha é sempre descartada</strong> (é o cabeçalho) — pode ter qualquer texto, mas tem de existir.</li>
+              <li>Células em branco são normais (ex: um aluno sem nota de "Saber Saber" ainda) — deixa o "tab" vazio, não apagues a coluna.</li>
+              <li>Números podem usar vírgula ou ponto decimal (ex: <code>13,5</code> ou <code>13.5</code>) — tal como o Excel em PT-PT copia.</li>
+              <li>A ordem dos blocos de 5 colunas (Saber Ser/Fazer/Saber/Nota Final/Comentário) tem de ser sempre a mesma — no
+                passo seguinte ("Disciplina de cada bloco") indicas a que disciplina corresponde cada bloco, pela posição.</li>
+            </ul>
+            <table class="dt-aval-grid dt-import-exemplo-tabela">
+              <thead>
+                <tr>
+                  <th rowspan="2">Aluno</th>
+                  <th colspan="5">Matemática</th>
+                  <th colspan="5">Inglês</th>
+                </tr>
+                <tr>
+                  <th>Saber Ser</th><th>Saber Fazer</th><th>Saber Saber</th><th>Nota Final</th><th>Comentário</th>
+                  <th>Saber Ser</th><th>Saber Fazer</th><th>Saber Saber</th><th>Nota Final</th><th>Comentário</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>604 Maria Silva</td>
+                  <td>14</td><td>15</td><td>12</td><td>13,5</td><td>Boa evolução este período.</td>
+                  <td>12</td><td>15</td><td>10</td><td>12</td><td>Precisa de trabalhar mais a oralidade.</td>
+                </tr>
+                <tr>
+                  <td>118 João Santos</td>
+                  <td>10</td><td>8</td><td><em>(vazio)</em></td><td>9</td><td>Tem faltado às aulas.</td>
+                  <td>16</td><td>18</td><td>14</td><td>16</td><td>Excelente participação.</td>
+                </tr>
+              </tbody>
+            </table>
+            <button type="button" id="importExemploUsarBtn" class="btn btn-secondary" style="margin-top: 10px">
+              Pôr este exemplo no campo "Colar dados"
+            </button>
+          </details>
+
           <div class="form-group">
             <label for="importColarTexto">Colar dados</label>
             <textarea id="importColarTexto" class="form-control" rows="4" placeholder="Cola aqui (Ctrl+V) os dados copiados do Excel…"></textarea>
@@ -1282,6 +1325,21 @@
           function fecharAvaliacaoImportarOverlay() {
             avaliacaoImportarOverlayEl.classList.remove("aberto");
           }
+
+          // Exemplo de "Colar dados" (ver <details class="dt-import-exemplo">
+          // acima) — mesmo texto da tabela mostrada, em TSV (tal como o
+          // Excel copia), para quem quiser experimentar o fluxo completo
+          // sem precisar de recriar os tabs à mão.
+          document.getElementById("importExemploUsarBtn").addEventListener("click", () => {
+            const exemploTsv = [
+              ["Aluno", "Saber Ser", "Saber Fazer", "Saber Saber", "Nota Final", "Comentário", "Saber Ser", "Saber Fazer", "Saber Saber", "Nota Final", "Comentário"],
+              ["604 Maria Silva", "14", "15", "12", "13,5", "Boa evolução este período.", "12", "15", "10", "12", "Precisa de trabalhar mais a oralidade."],
+              ["118 João Santos", "10", "8", "", "9", "Tem faltado às aulas.", "16", "18", "14", "16", "Excelente participação."],
+            ]
+              .map((linha) => linha.join("\t"))
+              .join("\n");
+            document.getElementById("importColarTexto").value = exemploTsv;
+          });
 
           document.getElementById("importarAvaliacoesBtn").addEventListener("click", abrirAvaliacaoImportarOverlay);
           document.getElementById("closeAvaliacaoImportarBtn").addEventListener("click", fecharAvaliacaoImportarOverlay);

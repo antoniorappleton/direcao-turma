@@ -5,3 +5,7 @@
 # comitar num repositório público. Ver db/add_historico_disciplinas.sql
 # para o schema/RLS genérico (esse sim vai para o git).
 /db/local/
+
+# Backups locais de tabelas com dados reais de alunos (ex: antes de um
+# apagar em massa) — nunca comitar.
+/backups/
