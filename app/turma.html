@@ -885,13 +885,17 @@
           });
 
           // Relatório de Avaliação Intercalar — reproduz o modelo em PDF usado
-          // pelo colégio: um registo por página, com a turma inteira num só
+          // pelo colégio (ver "Avaliação Profissional 1.ºPIntercalar.pdf" na
+          // raiz do projeto): um aluno por página (ou mais, se a tabela de
+          // disciplinas não couber numa só), com a turma inteira num só
           // documento (via impressão/"Guardar como PDF" do browser, para não
           // depender de bibliotecas externas). Usa as avaliações já
-          // carregadas (tipo "intercalar") no período escolhido no filtro —
-          // não há (ainda) domínios Saber Ser/Saber Fazer/Saber Saber nem
-          // médias oficiais no modelo de dados, por isso o relatório mostra
-          // só disciplina, nota e comentário, mais a média do aluno.
+          // carregadas (tipo "intercalar") no período escolhido no filtro.
+          // Cada disciplina ocupa um bloco de 3 linhas (Saber Ser/Saber
+          // Fazer/Saber Saber), tal como no modelo — mostradas mesmo sem
+          // valor, para manter a grelha igual. Não existe (ainda) "Média
+          // Oficial" no modelo de dados (só a nossa própria média), por isso
+          // o relatório mostra apenas "Média Interna".
           function gerarRelatorioTurma() {
             const periodo = avalFiltroPeriodoEl.value;
             if (!periodo) {
@@ -916,9 +920,12 @@
             }
 
             const periodoLabel = PERIODO_LABELS[periodo] || `${periodo}.º Período`;
-            const anoLetivo = document.getElementById("classSchoolYear").textContent;
+            const anoLetivo = document.getElementById("classSchoolYear").textContent.replace("/", " / ");
+            const turmaLabel = `${turma.ano}.º ${turma.nome}`;
             const logoUrl = new URL("assets/logo.png", location.href).href;
             const geradoEm = new Date().toLocaleString("pt-PT");
+
+            const dominio = (v) => (typeof v === "number" ? formatNota(v) : "");
 
             const paginas = alunosComDados
               .map((aluno) => {
@@ -928,41 +935,38 @@
                   .sort((a, b) => a.disciplina.localeCompare(b.disciplina, "pt"));
                 const mediaAluno = media(registos.filter(isEscala20).map((r) => r.nota));
                 const linhas = registos
-                  .map((r) => {
-                    const temDominios = [r.saber_ser, r.saber_fazer, r.saber_saber].some((v) => typeof v === "number");
-                    const dominiosHtml = temDominios
-                      ? `<div class="rel-dominios">
-                          <span>Saber Ser: ${typeof r.saber_ser === "number" ? formatNota(r.saber_ser) : "—"}</span>
-                          <span>Saber Fazer: ${typeof r.saber_fazer === "number" ? formatNota(r.saber_fazer) : "—"}</span>
-                          <span>Saber Saber: ${typeof r.saber_saber === "number" ? formatNota(r.saber_saber) : "—"}</span>
-                        </div>`
-                      : "";
-                    return `
-                  <tr>
-                    <td>${escapeHtml(r.disciplina)}${dominiosHtml}</td>
-                    <td class="rel-col-nota">${typeof r.nota === "number" ? formatNota(r.nota) : "—"}</td>
-                    <td>${escapeHtml(r.observacao || "")}</td>
-                  </tr>`;
-                  })
+                  .map(
+                    (r) => `
+                  <tr class="rel-bloco-inicio">
+                    <td class="rel-disciplina" rowspan="3">${escapeHtml(r.disciplina)}</td>
+                    <td class="rel-nota" rowspan="3">${typeof r.nota === "number" ? formatNota(r.nota) : "—"}</td>
+                    <td class="rel-dominio"><span>Saber Ser</span><span>${dominio(r.saber_ser)}</span></td>
+                    <td class="rel-comentario" rowspan="3">${escapeHtml(r.observacao || "")}</td>
+                  </tr>
+                  <tr><td class="rel-dominio"><span>Saber Fazer</span><span>${dominio(r.saber_fazer)}</span></td></tr>
+                  <tr><td class="rel-dominio rel-dominio-fim"><span>Saber Saber</span><span>${dominio(r.saber_saber)}</span></td></tr>`,
+                  )
                   .join("");
                 return `
                 <section class="rel-pagina">
                   <header class="rel-header">
                     <img src="${logoUrl}" alt="" class="rel-logo" />
                     <div class="rel-titulo">
-                      <h1>Relatório de Avaliação Intercalar</h1>
-                      <p>${escapeHtml(periodoLabel)} Intercalar &middot; ${escapeHtml(anoLetivo)}</p>
+                      <h1>Relatório de Avaliação Intercalar - ${escapeHtml(periodoLabel)} Intercalar</h1>
+                      <p>${escapeHtml(anoLetivo)}</p>
                     </div>
                   </header>
                   <div class="rel-aluno">
-                    <strong>${aluno.numero_interno ? `${escapeHtml(String(aluno.numero_interno))} — ` : ""}${escapeHtml(aluno.nome)}</strong>
-                    <span>${escapeHtml(turma.nome)}</span>
+                    <strong>${aluno.numero_interno ? `${escapeHtml(String(aluno.numero_interno))} ` : ""}${escapeHtml(aluno.nome)}</strong>
+                    <strong>${escapeHtml(turmaLabel)}</strong>
                   </div>
                   <table class="rel-tabela">
-                    <thead><tr><th>Disciplina</th><th class="rel-col-nota">Nota</th><th>Comentário</th></tr></thead>
+                    <thead><tr><th class="rel-col-disciplina"></th><th class="rel-col-nota">Nota</th><th class="rel-col-dominios">Elementos de avaliação</th><th class="rel-col-comentario">Comentário</th></tr></thead>
                     <tbody>${linhas}</tbody>
                   </table>
-                  <div class="rel-media"><span>Média</span><strong>${mediaAluno === null ? "—" : formatNota(mediaAluno)}</strong></div>
+                  <div class="rel-resumo">
+                    <div class="rel-media-linha"><span>Média Interna</span><strong>${mediaAluno === null ? "—" : formatNota(mediaAluno)}</strong></div>
+                  </div>
                   <div class="rel-assinaturas">
                     <div class="rel-assinatura"><div class="rel-linha"></div><span>O Diretor de Turma</span><span>Data: ___ / ___ / ______</span></div>
                     <div class="rel-assinatura"><div class="rel-linha"></div><span>O Encarregado de Educação</span><span>Data: ___ / ___ / ______</span></div>
@@ -976,23 +980,31 @@
               <html lang="pt">
               <head>
                 <meta charset="utf-8" />
-                <title>Relatório de Avaliação Intercalar — ${escapeHtml(turma.nome)}</title>
+                <title>Relatório de Avaliação Intercalar — ${escapeHtml(turmaLabel)}</title>
                 <style>
                   * { box-sizing: border-box; }
                   body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; margin: 0; }
                   .rel-pagina { padding: 28px 36px; page-break-after: always; }
                   .rel-pagina:last-child { page-break-after: auto; }
-                  .rel-header { display: flex; align-items: center; gap: 16px; border-bottom: 2px solid #1a1a1a; padding-bottom: 12px; margin-bottom: 16px; }
-                  .rel-logo { width: 64px; height: 64px; object-fit: contain; }
-                  .rel-titulo h1 { font-size: 18px; margin: 0; }
-                  .rel-titulo p { font-size: 13px; margin: 4px 0 0; color: #444; }
-                  .rel-aluno { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; margin-bottom: 14px; }
-                  .rel-tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
-                  .rel-tabela th, .rel-tabela td { border: 1px solid #999; padding: 8px 10px; text-align: left; vertical-align: top; }
-                  .rel-tabela th { background: #f0f0f0; }
-                  .rel-col-nota { width: 70px; text-align: center; }
-                  .rel-dominios { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; font-size: 11px; color: #555; font-weight: normal; }
-                  .rel-media { display: flex; justify-content: flex-end; gap: 10px; font-size: 14px; margin: 14px 2px; }
+                  .rel-header { display: grid; grid-template-columns: 60px 1fr 60px; align-items: center; text-align: center; border-bottom: 2px solid #1a1a1a; padding-bottom: 10px; margin-bottom: 14px; }
+                  .rel-logo { width: 52px; height: 52px; object-fit: contain; }
+                  .rel-titulo h1 { font-size: 15px; margin: 0; font-weight: 700; }
+                  .rel-titulo p { font-size: 13px; margin: 3px 0 0; color: #333; }
+                  .rel-aluno { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; padding-bottom: 4px; margin-bottom: 12px; border-bottom: 3px double #1a1a1a; }
+                  .rel-tabela { width: 100%; border-collapse: collapse; border-top: 1px solid #333; font-size: 11.5px; }
+                  .rel-tabela th { padding: 4px 8px 8px; text-align: left; font-weight: 700; font-size: 11px; border-bottom: 1px solid #333; }
+                  .rel-tabela td { padding: 5px 8px; text-align: left; vertical-align: middle; }
+                  .rel-col-nota, .rel-nota { width: 50px; text-align: center; }
+                  .rel-col-dominios { width: 150px; }
+                  .rel-disciplina { font-weight: 700; border-bottom: 1px solid #333; }
+                  .rel-nota { color: #888; font-weight: 600; border-bottom: 1px solid #333; }
+                  .rel-comentario { font-size: 11px; color: #222; border-bottom: 1px solid #333; }
+                  .rel-dominio { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; }
+                  .rel-dominio span:first-child { font-weight: 700; }
+                  .rel-dominio-fim { border-bottom: 1px solid #333; }
+                  .rel-resumo { margin: 16px 2px 0; font-size: 13px; }
+                  .rel-media-linha { display: flex; gap: 24px; font-weight: 700; }
+                  .rel-media-linha strong { font-weight: 400; min-width: 40px; }
                   .rel-assinaturas { display: flex; justify-content: space-between; gap: 40px; margin-top: 56px; }
                   .rel-assinatura { flex: 1; text-align: center; font-size: 12px; color: #333; }
                   .rel-linha { border-top: 1px solid #333; margin-bottom: 6px; }
