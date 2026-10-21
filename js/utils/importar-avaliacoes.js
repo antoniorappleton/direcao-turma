@@ -119,4 +119,29 @@ const ImportarAvaliacoes = {
 
     return { registos, linhasIgnoradas };
   },
+
+  // Permite importar o mesmo período em vários ficheiros sucessivos, cada
+  // um mais completo que o anterior, sem duplicar avaliações: casa cada
+  // registo novo com uma avaliação já existente (mesmo aluno/disciplina/
+  // período/tipo) e, se encontrar, marca-o para UPDATE em vez de INSERT —
+  // os campos que o novo ficheiro traz preenchidos substituem os antigos,
+  // os que traz em branco mantêm o valor que já estava gravado.
+  prepararParaGravar(registos, avaliacoesExistentes) {
+    const CAMPOS_MESCLAVEIS = ["nota", "saber_ser", "saber_fazer", "saber_saber", "observacao"];
+    return registos.map((registo) => {
+      const existente = avaliacoesExistentes.find(
+        (e) =>
+          e.aluno_id === registo.aluno_id &&
+          e.disciplina === registo.disciplina &&
+          Number(e.periodo) === Number(registo.periodo) &&
+          e.tipo === registo.tipo,
+      );
+      if (!existente) return { ...registo, _acao: "nova" };
+      const mesclado = { ...registo };
+      CAMPOS_MESCLAVEIS.forEach((campo) => {
+        if (mesclado[campo] === null || mesclado[campo] === undefined) mesclado[campo] = existente[campo] ?? null;
+      });
+      return { ...mesclado, _acao: "atualiza", _id: existente.id };
+    });
+  },
 };
