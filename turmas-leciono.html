@@ -7,6 +7,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="stylesheet" href="css/styles.css?v=1.1.18" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
     <script src="js/core/auth.js"></script>
@@ -14,6 +15,7 @@
     <script src="js/services/turmas.service.js"></script>
     <script src="js/services/alunos.service.js"></script>
     <script src="js/services/professor-turmas.service.js"></script>
+    <script src="js/services/avaliacoes.service.js"></script>
     <script src="js/pwa-install.js"></script>
   </head>
   <body class="dt-workspace dt-dashboard-body">
@@ -65,10 +67,89 @@
           <div class="dt-empty-state">A carregar turmas...</div>
         </div>
       </section>
+
+      <section id="avalLecionoSection" class="dt-section dt-avaliacoes-leciono-section" style="display: none">
+        <div class="dt-section-heading">
+          <div>
+            <div class="dt-eyebrow">Avaliações</div>
+            <h2>Avaliações das turmas que leciono</h2>
+          </div>
+        </div>
+
+        <div class="dt-aval-leciono-filtros">
+          <div class="dt-checklist-group">
+            <div class="dt-checklist-group-title">
+              Turmas
+              <button type="button" class="dt-checklist-toggle" data-group="turma" data-acao="todas">Todas</button>
+              <button type="button" class="dt-checklist-toggle" data-group="turma" data-acao="nenhuma">Nenhuma</button>
+            </div>
+            <div class="dt-checkbox-row dt-checkbox-row--scroll" id="avalLecionoTurmasList"></div>
+          </div>
+
+          <div class="dt-checklist-group">
+            <div class="dt-checklist-group-title">
+              Disciplinas
+              <button type="button" class="dt-checklist-toggle" data-group="disciplina" data-acao="todas">Todas</button>
+              <button type="button" class="dt-checklist-toggle" data-group="disciplina" data-acao="nenhuma">Nenhuma</button>
+            </div>
+            <div class="dt-checkbox-row dt-checkbox-row--scroll" id="avalLecionoDisciplinasList"></div>
+          </div>
+
+          <div class="dt-checklist-group">
+            <div class="dt-checklist-group-title">
+              Alunos
+              <button type="button" class="dt-checklist-toggle" data-group="aluno" data-acao="todas">Todos</button>
+              <button type="button" class="dt-checklist-toggle" data-group="aluno" data-acao="nenhuma">Nenhum</button>
+            </div>
+            <input type="search" id="avalLecionoAlunoBusca" class="form-control" placeholder="Pesquisar aluno…" style="margin-bottom: 8px" />
+            <div class="dt-checkbox-row dt-checkbox-row--scroll" id="avalLecionoAlunosList"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="avalLecionoPeriodo">Período</label>
+            <select id="avalLecionoPeriodo" class="form-control">
+              <option value="">Todos os períodos</option>
+              <option value="1">1.º Período</option>
+              <option value="2">2.º Período</option>
+              <option value="3">3.º Período</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="dt-student-summary dt-aval-summary">
+          <div class="dt-summary-fact"><span>Média</span><strong id="avalLecionoResumoMedia">—</strong></div>
+          <div class="dt-summary-fact"><span>Avaliações</span><strong id="avalLecionoResumoCount">0</strong></div>
+          <div class="dt-summary-fact"><span>Positivas</span><strong id="avalLecionoResumoPositivas">0</strong></div>
+          <div class="dt-summary-fact"><span>Negativas</span><strong id="avalLecionoResumoNegativas">0</strong></div>
+        </div>
+
+        <div class="dt-dash-grid">
+          <div class="dt-dash-card">
+            <div class="dt-dash-card-title">Média por turma</div>
+            <div class="dt-dash-canvas-wrap"><canvas id="chartLecionoMediaTurma"></canvas></div>
+          </div>
+          <div class="dt-dash-card">
+            <div class="dt-dash-card-title">Positivas vs. negativas</div>
+            <div class="dt-dash-canvas-wrap dt-dash-canvas-wrap--sm"><canvas id="chartLecionoPositivasNegativas"></canvas></div>
+            <div id="dashLecionoPositivasLegenda" class="dt-dash-legend"></div>
+          </div>
+          <div class="dt-dash-card dt-dash-card--wide">
+            <div class="dt-dash-card-title">Média por disciplina</div>
+            <div class="dt-dash-canvas-wrap dt-dash-canvas-wrap--lg"><canvas id="chartLecionoMediaDisciplina"></canvas></div>
+          </div>
+          <div class="dt-dash-card dt-dash-card--wide">
+            <div class="dt-dash-card-title">Média por aluno</div>
+            <div class="dt-dash-canvas-wrap dt-dash-canvas-wrap--xl">
+              <div id="chartLecionoMediaAlunoInner" class="dt-dash-canvas-inner"><canvas id="chartLecionoMediaAluno"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <p id="dashLecionoSemDados" class="dt-dash-empty" style="display: none">Sem avaliações para os filtros selecionados.</p>
+      </section>
     </main>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.17
+      made by antonio.appleton | Departamento de Programação · v1.1.7
     </footer>
 
     <script>
@@ -132,18 +213,371 @@
 
           render(minhasTurmas);
 
+          let alunosTodos = [];
           try {
-            const alunos = await AlunosService.getByTurmas(minhasTurmas.map((t) => t.id));
-            document.getElementById("metricAlunos").textContent = alunos.length;
+            alunosTodos = await AlunosService.getByTurmas(minhasTurmas.map((t) => t.id));
+            document.getElementById("metricAlunos").textContent = alunosTodos.length;
           } catch (alunosErr) {
             console.error(alunosErr);
             document.getElementById("metricAlunos").textContent = "—";
+          }
+
+          if (minhasTurmas.length) {
+            try {
+              const avaliacoesTodas = await AvaliacoesService.getByTurmas(minhasTurmas.map((t) => t.id));
+              iniciarAvaliacoesLeciono({ minhasTurmas, alunosTodos, avaliacoesTodas });
+            } catch (avalErr) {
+              console.error(avalErr);
+            }
           }
         } catch (e) {
           console.error(e);
           listEl.innerHTML = '<div class="admin-list-item" style="color: var(--error)">Erro ao carregar turmas.</div>';
         }
       })();
+
+      // --- Avaliações das turmas que leciono (seleção por turma/disciplina/
+      // aluno via checkboxes, ver dt-dash-* para o porquê das cores fixas) --
+      function iniciarAvaliacoesLeciono({ minhasTurmas, alunosTodos, avaliacoesTodas }) {
+        const secaoEl = document.getElementById("avalLecionoSection");
+        secaoEl.style.display = "block";
+
+        function escapeHtml(texto) {
+          return String(texto ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+        }
+        function formatNota(n) {
+          return Number.isFinite(n) ? n.toFixed(1).replace(".", ",") : "—";
+        }
+        function isEscala20(a) {
+          return a.escala === "0-20" && typeof a.nota === "number";
+        }
+        function media(valores) {
+          if (!valores.length) return null;
+          return valores.reduce((soma, v) => soma + v, 0) / valores.length;
+        }
+        function turmaNome(turmaId) {
+          const t = minhasTurmas.find((x) => x.id === turmaId);
+          return t ? `${t.nome} (${t.ano}.º)` : "—";
+        }
+        function alunoNome(alunoId) {
+          return alunosTodos.find((x) => x.id === alunoId)?.nome || "—";
+        }
+
+        const DASH_COR_SERIE = "#2a78d6";
+        const DASH_COR_POSITIVA = "#0ca30c";
+        const DASH_COR_NEGATIVA = "#d03b3b";
+
+        function dashCssVar(nome) {
+          return getComputedStyle(document.body).getPropertyValue(nome).trim();
+        }
+
+        if (window.Chart) {
+          Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+          Chart.defaults.color = dashCssVar("--text-muted");
+          Chart.defaults.plugins.tooltip.backgroundColor = "#20332f";
+          Chart.defaults.plugins.tooltip.titleColor = "#fff";
+          Chart.defaults.plugins.tooltip.bodyColor = "#fff";
+          Chart.defaults.plugins.tooltip.cornerRadius = 6;
+          Chart.defaults.plugins.tooltip.padding = 8;
+        }
+
+        const dashValueLabels = {
+          id: "dashValueLabels",
+          afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            ctx.save();
+            ctx.font = `600 11px ${getComputedStyle(document.body).fontFamily}`;
+            ctx.fillStyle = dashCssVar("--text-main");
+            chart.data.datasets.forEach((dataset, di) => {
+              const meta = chart.getDatasetMeta(di);
+              if (meta.hidden) return;
+              meta.data.forEach((elemento, i) => {
+                const valor = dataset.data[i];
+                if (valor === null || valor === undefined) return;
+                const texto = formatNota(valor);
+                const pos = elemento.tooltipPosition();
+                if (chart.config.options.indexAxis === "y") {
+                  ctx.textAlign = "left";
+                  ctx.textBaseline = "middle";
+                  ctx.fillText(texto, pos.x + 6, pos.y);
+                } else {
+                  ctx.textAlign = "center";
+                  ctx.textBaseline = "bottom";
+                  ctx.fillText(texto, pos.x, pos.y - 4);
+                }
+              });
+            });
+            ctx.restore();
+          },
+        };
+
+        function dashGrid() {
+          return { color: dashCssVar("--surface-border"), drawTicks: false };
+        }
+
+        let chartTurma = null;
+        let chartDisciplina = null;
+        let chartAluno = null;
+        let chartPositivasNegativas = null;
+
+        // Exclusões (não os selecionados): por omissão tudo está incluído;
+        // desmarcar uma turma/disciplina/aluno só a acrescenta aqui — assim
+        // o que aparece de novo ao mudar a seleção de turmas fica incluído
+        // por omissão, e o que o próprio DT excluiu mantém-se excluído.
+        const turmasExcluidas = new Set();
+        const disciplinasExcluidas = new Set();
+        const alunosExcluidos = new Set();
+
+        const turmasListEl = document.getElementById("avalLecionoTurmasList");
+        const disciplinasListEl = document.getElementById("avalLecionoDisciplinasList");
+        const alunosListEl = document.getElementById("avalLecionoAlunosList");
+        const alunoBuscaEl = document.getElementById("avalLecionoAlunoBusca");
+        const periodoEl = document.getElementById("avalLecionoPeriodo");
+
+        function turmasSelecionadas() {
+          return new Set(minhasTurmas.map((t) => t.id).filter((id) => !turmasExcluidas.has(id)));
+        }
+
+        function disciplinasDasTurmasSelecionadas() {
+          const turmasSel = turmasSelecionadas();
+          return Array.from(new Set(avaliacoesTodas.filter((a) => turmasSel.has(a.turma_id)).map((a) => a.disciplina))).sort((a, b) =>
+            a.localeCompare(b, "pt"),
+          );
+        }
+
+        function alunosDasTurmasSelecionadas() {
+          const turmasSel = turmasSelecionadas();
+          return alunosTodos.filter((al) => turmasSel.has(al.turma_id)).sort((a, b) => a.nome.localeCompare(b.nome, "pt"));
+        }
+
+        function renderTurmasChecklist() {
+          turmasListEl.innerHTML = minhasTurmas
+            .map(
+              (t) => `
+              <label>
+                <input type="checkbox" class="aval-leciono-turma-check" value="${t.id}" ${turmasExcluidas.has(t.id) ? "" : "checked"} />
+                ${escapeHtml(t.nome)} (${t.ano}.º ano)
+              </label>`,
+            )
+            .join("");
+        }
+
+        function renderDisciplinasChecklist() {
+          const disciplinas = disciplinasDasTurmasSelecionadas();
+          disciplinasListEl.innerHTML = disciplinas.length
+            ? disciplinas
+                .map(
+                  (d) => `
+                  <label>
+                    <input type="checkbox" class="aval-leciono-disciplina-check" value="${escapeHtml(d)}" ${disciplinasExcluidas.has(d) ? "" : "checked"} />
+                    ${escapeHtml(d)}
+                  </label>`,
+                )
+                .join("")
+            : '<p style="color: var(--text-muted); font-size: 13px; margin: 0">Sem disciplinas nas turmas selecionadas.</p>';
+        }
+
+        function renderAlunosChecklist() {
+          const termo = alunoBuscaEl.value.trim().toLowerCase();
+          const alunosDaSelecao = alunosDasTurmasSelecionadas();
+          const alunosFiltrados = termo ? alunosDaSelecao.filter((al) => al.nome.toLowerCase().includes(termo)) : alunosDaSelecao;
+          alunosListEl.innerHTML = alunosFiltrados.length
+            ? alunosFiltrados
+                .map(
+                  (al) => `
+                  <label>
+                    <input type="checkbox" class="aval-leciono-aluno-check" value="${al.id}" ${alunosExcluidos.has(al.id) ? "" : "checked"} />
+                    ${escapeHtml(al.nome)}
+                  </label>`,
+                )
+                .join("")
+            : '<p style="color: var(--text-muted); font-size: 13px; margin: 0">Sem alunos nas turmas selecionadas.</p>';
+        }
+
+        function filtrarAvaliacoes() {
+          const turmasSel = turmasSelecionadas();
+          const disciplinasSel = new Set(disciplinasDasTurmasSelecionadas().filter((d) => !disciplinasExcluidas.has(d)));
+          const alunosSel = new Set(alunosDasTurmasSelecionadas().map((al) => al.id).filter((id) => !alunosExcluidos.has(id)));
+          const periodo = periodoEl.value;
+          return avaliacoesTodas.filter(
+            (a) =>
+              turmasSel.has(a.turma_id) &&
+              disciplinasSel.has(a.disciplina) &&
+              alunosSel.has(a.aluno_id) &&
+              (!periodo || String(a.periodo) === periodo),
+          );
+        }
+
+        function renderDashboard() {
+          if (!window.Chart) return;
+          const filtradas = filtrarAvaliacoes();
+          document.getElementById("dashLecionoSemDados").style.display = filtradas.length ? "none" : "block";
+
+          const notas20 = filtradas.filter(isEscala20).map((a) => a.nota);
+          const positivas = notas20.filter((n) => n >= 10).length;
+          const negativas = notas20.filter((n) => n < 10).length;
+          const m = media(notas20);
+          document.getElementById("avalLecionoResumoMedia").textContent = m === null ? "—" : formatNota(m);
+          document.getElementById("avalLecionoResumoCount").textContent = filtradas.length;
+          document.getElementById("avalLecionoResumoPositivas").textContent = positivas;
+          document.getElementById("avalLecionoResumoNegativas").textContent = negativas;
+
+          // 1) Média por turma
+          const porTurma = new Map();
+          filtradas.forEach((a) => {
+            if (!isEscala20(a)) return;
+            if (!porTurma.has(a.turma_id)) porTurma.set(a.turma_id, []);
+            porTurma.get(a.turma_id).push(a.nota);
+          });
+          const linhasTurma = Array.from(porTurma.entries())
+            .map(([turmaId, notas]) => [turmaNome(turmaId), media(notas)])
+            .sort((a, b) => b[1] - a[1]);
+
+          chartTurma?.destroy();
+          chartTurma = new Chart(document.getElementById("chartLecionoMediaTurma"), {
+            type: "bar",
+            data: {
+              labels: linhasTurma.map(([n]) => n),
+              datasets: [{ data: linhasTurma.map(([, mm]) => mm), backgroundColor: DASH_COR_SERIE, borderRadius: 4, maxBarThickness: 48 }],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: { y: { beginAtZero: true, max: 20, grid: dashGrid() }, x: { grid: { display: false } } },
+            },
+            plugins: [dashValueLabels],
+          });
+
+          // 2) Positivas vs. negativas
+          const totalNotas = positivas + negativas;
+          chartPositivasNegativas?.destroy();
+          chartPositivasNegativas = new Chart(document.getElementById("chartLecionoPositivasNegativas"), {
+            type: "doughnut",
+            data: {
+              labels: ["Positivas", "Negativas"],
+              datasets: [{ data: [positivas, negativas], backgroundColor: [DASH_COR_POSITIVA, DASH_COR_NEGATIVA], borderColor: "#fff", borderWidth: 2 }],
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+          });
+          const pct = (n) => (totalNotas ? Math.round((n / totalNotas) * 100) : 0);
+          document.getElementById("dashLecionoPositivasLegenda").innerHTML = totalNotas
+            ? `<span><i style="background:${DASH_COR_POSITIVA}"></i>Positivas: ${positivas} (${pct(positivas)}%)</span><span><i style="background:${DASH_COR_NEGATIVA}"></i>Negativas: ${negativas} (${pct(negativas)}%)</span>`
+            : "";
+
+          // 3) Média por disciplina
+          const porDisciplina = new Map();
+          filtradas.forEach((a) => {
+            if (!isEscala20(a)) return;
+            if (!porDisciplina.has(a.disciplina)) porDisciplina.set(a.disciplina, []);
+            porDisciplina.get(a.disciplina).push(a.nota);
+          });
+          const linhasDisciplina = Array.from(porDisciplina.entries())
+            .map(([disciplina, notas]) => [disciplina, media(notas)])
+            .sort((a, b) => b[1] - a[1]);
+
+          chartDisciplina?.destroy();
+          chartDisciplina = new Chart(document.getElementById("chartLecionoMediaDisciplina"), {
+            type: "bar",
+            data: {
+              labels: linhasDisciplina.map(([d]) => d),
+              datasets: [{ data: linhasDisciplina.map(([, mm]) => mm), backgroundColor: DASH_COR_SERIE, borderRadius: 4, maxBarThickness: 22 }],
+            },
+            options: {
+              indexAxis: "y",
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: { x: { beginAtZero: true, max: 20, grid: dashGrid() }, y: { grid: { display: false } } },
+            },
+            plugins: [dashValueLabels],
+          });
+
+          // 4) Média por aluno (altura dinâmica — pode haver muitos alunos de várias turmas)
+          const porAluno = new Map();
+          filtradas.forEach((a) => {
+            if (!isEscala20(a)) return;
+            if (!porAluno.has(a.aluno_id)) porAluno.set(a.aluno_id, []);
+            porAluno.get(a.aluno_id).push(a.nota);
+          });
+          const linhasAluno = Array.from(porAluno.entries())
+            .map(([alunoId, notas]) => [alunoNome(alunoId), media(notas)])
+            .sort((a, b) => b[1] - a[1]);
+
+          document.getElementById("chartLecionoMediaAlunoInner").style.height = `${Math.max(220, linhasAluno.length * 24)}px`;
+
+          chartAluno?.destroy();
+          chartAluno = new Chart(document.getElementById("chartLecionoMediaAluno"), {
+            type: "bar",
+            data: {
+              labels: linhasAluno.map(([n]) => n),
+              datasets: [{ data: linhasAluno.map(([, mm]) => mm), backgroundColor: DASH_COR_SERIE, borderRadius: 4, maxBarThickness: 18 }],
+            },
+            options: {
+              indexAxis: "y",
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: { x: { beginAtZero: true, max: 20, grid: dashGrid() }, y: { grid: { display: false } } },
+            },
+            plugins: [dashValueLabels],
+          });
+        }
+
+        turmasListEl.addEventListener("change", (event) => {
+          if (!event.target.classList.contains("aval-leciono-turma-check")) return;
+          if (event.target.checked) turmasExcluidas.delete(event.target.value);
+          else turmasExcluidas.add(event.target.value);
+          renderDisciplinasChecklist();
+          renderAlunosChecklist();
+          renderDashboard();
+        });
+
+        disciplinasListEl.addEventListener("change", (event) => {
+          if (!event.target.classList.contains("aval-leciono-disciplina-check")) return;
+          if (event.target.checked) disciplinasExcluidas.delete(event.target.value);
+          else disciplinasExcluidas.add(event.target.value);
+          renderDashboard();
+        });
+
+        alunosListEl.addEventListener("change", (event) => {
+          if (!event.target.classList.contains("aval-leciono-aluno-check")) return;
+          if (event.target.checked) alunosExcluidos.delete(event.target.value);
+          else alunosExcluidos.add(event.target.value);
+          renderDashboard();
+        });
+
+        alunoBuscaEl.addEventListener("input", renderAlunosChecklist);
+        periodoEl.addEventListener("change", renderDashboard);
+
+        document.querySelectorAll(".dt-checklist-toggle").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const grupo = btn.dataset.group;
+            const todas = btn.dataset.acao === "todas";
+            if (grupo === "turma") {
+              if (todas) turmasExcluidas.clear();
+              else minhasTurmas.forEach((t) => turmasExcluidas.add(t.id));
+              renderTurmasChecklist();
+              renderDisciplinasChecklist();
+              renderAlunosChecklist();
+            } else if (grupo === "disciplina") {
+              const disciplinas = disciplinasDasTurmasSelecionadas();
+              disciplinas.forEach((d) => (todas ? disciplinasExcluidas.delete(d) : disciplinasExcluidas.add(d)));
+              renderDisciplinasChecklist();
+            } else if (grupo === "aluno") {
+              const alunosDaSelecao = alunosDasTurmasSelecionadas();
+              alunosDaSelecao.forEach((al) => (todas ? alunosExcluidos.delete(al.id) : alunosExcluidos.add(al.id)));
+              renderAlunosChecklist();
+            }
+            renderDashboard();
+          });
+        });
+
+        renderTurmasChecklist();
+        renderDisciplinasChecklist();
+        renderAlunosChecklist();
+        renderDashboard();
+      }
 
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker

@@ -2115,6 +2115,66 @@ body.dt-workspace main.app-container {
   padding: 24px 0 0;
 }
 
+.dt-dash-canvas-wrap--xl {
+  height: auto;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.dt-dash-canvas-inner {
+  position: relative;
+  width: 100%;
+  height: 220px;
+}
+
+.dt-aval-leciono-filtros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) 160px;
+  gap: 20px;
+  margin-bottom: 20px;
+  align-items: start;
+}
+
+.dt-checkbox-row--scroll {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.dt-checklist-group-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dt-checklist-toggle {
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+.dt-checklist-toggle:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 960px) {
+  .dt-aval-leciono-filtros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .dt-aval-leciono-filtros {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 720px) {
   .dt-modal--full {
     max-width: 100vw;

@@ -15,6 +15,20 @@ const AvaliacoesService = {
     return data || [];
   },
 
+  // Várias turmas de uma vez (painel "Turmas que leciono" → Avaliações) — a
+  // RLS (ver db/add_avaliacoes.sql) já filtra por turma lecionada, por isso
+  // basta pedir todas as turma_id de uma vez em vez de uma chamada por turma.
+  async getByTurmas(turmaIds) {
+    if (!turmaIds.length) return [];
+    const { data, error } = await window.supabase
+      .from("avaliacoes")
+      .select("*, alunos(nome)")
+      .in("turma_id", turmaIds)
+      .order("data", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
   async getByAluno(alunoId) {
     const { data, error } = await window.supabase
       .from("avaliacoes")
