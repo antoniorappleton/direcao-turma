@@ -1383,21 +1383,30 @@
               criadoPor: professor?.id || null,
             });
 
-            importRegistosPreview = registos;
+            // Casa com avaliações já registadas (mesmo aluno/disciplina/
+            // período/tipo) para não duplicar ao importar vários Excel
+            // sucessivos — ver ImportarAvaliacoes.prepararParaGravar.
+            importRegistosPreview = ImportarAvaliacoes.prepararParaGravar(registos, avaliacoes);
 
             const alunosEnvolvidos = new Set(registos.map((r) => r.aluno_id)).size;
+            const novosCount = importRegistosPreview.filter((r) => r._acao === "nova").length;
+            const atualizaCount = importRegistosPreview.filter((r) => r._acao === "atualiza").length;
             const avisoIgnoradas = linhasIgnoradas.length
               ? ` ⚠ ${linhasIgnoradas.length} linha${linhasIgnoradas.length === 1 ? "" : "s"} ignorada${linhasIgnoradas.length === 1 ? "" : "s"} por não encontrar o aluno (${linhasIgnoradas.map((l) => `"${l.texto}"`).join(", ")}).`
               : "";
-            importPreviewResumoEl.innerHTML = `${registos.length} avaliaç${registos.length === 1 ? "ão" : "ões"} de ${alunosEnvolvidos} aluno${alunosEnvolvidos === 1 ? "" : "s"} prontas a importar.${avisoIgnoradas}`;
+            importPreviewResumoEl.innerHTML = `${importRegistosPreview.length} avaliaç${importRegistosPreview.length === 1 ? "ão" : "ões"} de ${alunosEnvolvidos} aluno${alunosEnvolvidos === 1 ? "" : "s"} prontas a importar — ${novosCount} nova${novosCount === 1 ? "" : "s"}, ${atualizaCount} a atualizar avaliação já existente (sem duplicar).${avisoIgnoradas}`;
 
-            importPreviewListEl.innerHTML = registos.length
-              ? registos
-                  .map(
-                    (r, i) => `
+            importPreviewListEl.innerHTML = importRegistosPreview.length
+              ? importRegistosPreview
+                  .map((r, i) => {
+                    const badgeAcao =
+                      r._acao === "atualiza"
+                        ? `<span class="badge badge-neutral" title="Já existe uma avaliação desta disciplina para este aluno/período — os campos em branco neste ficheiro mantêm o valor anterior">Atualiza</span>`
+                        : `<span class="badge badge-positiva">Nova</span>`;
+                    return `
                   <div class="admin-list-item" data-index="${i}">
                     <div>
-                      <strong>${escapeHtml(r.aluno_nome)}</strong>
+                      <strong>${escapeHtml(r.aluno_nome)}</strong> ${badgeAcao}
                       <span style="color: var(--text-muted); font-size: 12px; display: block">
                         ${escapeHtml(r.disciplina)} · Nota: ${typeof r.nota === "number" ? formatNota(r.nota) : "—"}
                         ${[r.saber_ser, r.saber_fazer, r.saber_saber].some((v) => typeof v === "number") ? ` · Saber Ser/Fazer/Saber: ${r.saber_ser ?? "—"}/${r.saber_fazer ?? "—"}/${r.saber_saber ?? "—"}` : ""}
@@ -1405,8 +1414,8 @@
                       </span>
                     </div>
                     <button type="button" class="icon-btn danger remover-import-btn" title="Remover da importação">✕</button>
-                  </div>`,
-                  )
+                  </div>`;
+                  })
                   .join("")
               : '<div class="admin-list-item" style="color: var(--text-muted)">Sem registos para importar com este mapeamento.</div>';
 
@@ -1420,7 +1429,9 @@
             importRegistosPreview.splice(indice, 1);
             item.remove();
             importPreviewListEl.querySelectorAll(".admin-list-item[data-index]").forEach((el, i) => (el.dataset.index = i));
-            importPreviewResumoEl.textContent = `${importRegistosPreview.length} avaliaç${importRegistosPreview.length === 1 ? "ão" : "ões"} prontas a importar.`;
+            const novosRestantes = importRegistosPreview.filter((r) => r._acao === "nova").length;
+            const atualizaRestantes = importRegistosPreview.filter((r) => r._acao === "atualiza").length;
+            importPreviewResumoEl.textContent = `${importRegistosPreview.length} avaliaç${importRegistosPreview.length === 1 ? "ão" : "ões"} prontas a importar — ${novosRestantes} nova${novosRestantes === 1 ? "" : "s"}, ${atualizaRestantes} a atualizar.`;
           });
 
           document.getElementById("importConfirmarBtn").addEventListener("click", async () => {
@@ -1429,8 +1440,24 @@
               return;
             }
             try {
-              const paraInserir = importRegistosPreview.map(({ aluno_nome, ...resto }) => resto);
-              await AvaliacoesService.createMany(paraInserir);
+              const novos = importRegistosPreview
+                .filter((r) => r._acao === "nova")
+                .map(({ aluno_nome, _acao, ...resto }) => resto);
+              const atualizacoes = importRegistosPreview.filter((r) => r._acao === "atualiza");
+              if (novos.length) await AvaliacoesService.createMany(novos);
+              await Promise.all(
+                atualizacoes.map((r) =>
+                  AvaliacoesService.update(r._id, {
+                    data: r.data,
+                    nota: r.nota,
+                    escala: r.escala,
+                    saber_ser: r.saber_ser,
+                    saber_fazer: r.saber_fazer,
+                    saber_saber: r.saber_saber,
+                    observacao: r.observacao,
+                  }),
+                ),
+              );
               fecharAvaliacaoImportarOverlay();
               await carregarAvaliacoes();
             } catch (err) {
