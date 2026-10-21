@@ -2035,6 +2035,33 @@ body.dt-workspace main.app-container {
   font-size: 13px;
 }
 
+.dt-import-exemplo {
+  background: var(--primary-light);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.dt-import-exemplo summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--primary);
+}
+
+.dt-import-exemplo-tabela {
+  background: var(--surface);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 12px;
+}
+
+.dt-import-exemplo-tabela th,
+.dt-import-exemplo-tabela td {
+  white-space: nowrap;
+}
+
 .dt-aval-grid th,
 .dt-aval-grid td {
   padding: 10px 12px;
