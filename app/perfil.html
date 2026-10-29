@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Perfil — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.19" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.20" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -144,7 +144,7 @@
     </main>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.9
+      made by antonio.appleton | Departamento de Programação · v1.1.10
     </footer>
 
     <script>
@@ -429,12 +429,6 @@
                   newWorker.postMessage({ type: "SKIP_WAITING" });
                 }
               });
-            });
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener("controllerchange", () => {
-              if (refreshing) return;
-              refreshing = true;
-              window.location.reload();
             });
           })
           .catch(console.error);
