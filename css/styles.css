@@ -1273,6 +1273,41 @@ body.dt-workspace main.app-container {
   border-top: 1px solid var(--surface-border);
 }
 
+.dt-email-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding-top: 14px;
+}
+
+.dt-email-copy[hidden] {
+  display: none;
+}
+
+.dt-email-copy .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dt-email-copy svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.dt-email-copy > span {
+  flex: 1 1 260px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.dt-email-copy > small {
+  flex-basis: 100%;
+  color: var(--text-muted);
+}
+
 .dt-attention-item {
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr) auto;

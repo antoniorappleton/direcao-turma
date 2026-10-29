@@ -21,6 +21,24 @@ const AlunosService = {
     return data || [];
   },
 
+  async getEmailsEncarregadosByTurmas(turmaIds) {
+    if (!turmaIds.length) return [];
+    const { data, error } = await window.supabase
+      .from("alunos")
+      .select("aluno_encarregados(encarregados(email))")
+      .in("turma_id", turmaIds);
+    if (error) throw error;
+
+    const emails = new Map();
+    for (const aluno of data || []) {
+      for (const ligacao of aluno.aluno_encarregados || []) {
+        const email = ligacao.encarregados?.email?.trim();
+        if (email && !emails.has(email.toLowerCase())) emails.set(email.toLowerCase(), email);
+      }
+    }
+    return [...emails.values()];
+  },
+
   async getById(alunoId) {
     const { data, error } = await window.supabase
       .from("alunos")
