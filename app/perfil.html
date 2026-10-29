@@ -144,7 +144,7 @@
     </main>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.7
+      made by antonio.appleton | Departamento de Programação · v1.1.8
     </footer>
 
     <script>
@@ -262,16 +262,29 @@
         }
 
         async function carregarDocs() {
-          const docs = await DocumentosService.getByProfessor(professor.id);
-          renderDocs(docs);
+          try {
+            const docs = await DocumentosService.getByProfessor(professor.id);
+            renderDocs(docs);
+            return true;
+          } catch (err) {
+            console.error("Erro ao carregar documentos do professor", err);
+            docsListEl.innerHTML =
+              '<div class="alert alert-error">Não foi possível carregar o horário. Confirma se db/add_documentos_professor.sql já foi executado no Supabase.</div>';
+            return false;
+          }
         }
 
-        await carregarDocs();
+        const docsDisponiveis = await carregarDocs();
 
         const docFormEl = document.getElementById("docForm");
         const docMsgEl = document.getElementById("docMsg");
+        const toggleDocFormBtn = document.getElementById("toggleDocFormBtn");
+        toggleDocFormBtn.disabled = !docsDisponiveis;
+        if (!docsDisponiveis) {
+          toggleDocFormBtn.title = "Executa db/add_documentos_professor.sql no Supabase para ativar esta funcionalidade.";
+        }
 
-        document.getElementById("toggleDocFormBtn").addEventListener("click", () => {
+        toggleDocFormBtn.addEventListener("click", () => {
           docFormEl.style.display = docFormEl.style.display === "none" ? "block" : "none";
         });
 
