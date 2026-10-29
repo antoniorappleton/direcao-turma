@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Perfil — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.20" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.21" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -144,7 +144,7 @@
     </main>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.10
+      made by antonio.appleton | Departamento de Programação · v1.1.11
     </footer>
 
     <script>
@@ -364,17 +364,32 @@
             : '<div class="admin-list-item" style="color: var(--text-muted)">Sem tarefas por agora.</div>';
         }
 
-        async function carregarTarefas() {
-          renderTarefas(await TarefasService.getByProfessor(professor.id));
-        }
-
-        await carregarTarefas();
-
         const tarefaFormEl = document.getElementById("tarefaForm");
         const tarefaTituloEl = document.getElementById("tarefaTitulo");
+        const tarefasSubmitBtn = tarefaFormEl.querySelector('button[type="submit"]');
+
+        async function carregarTarefas() {
+          try {
+            renderTarefas(await TarefasService.getByProfessor(professor.id));
+            return true;
+          } catch (err) {
+            console.error("Erro ao carregar tarefas do professor", err);
+            tarefasListEl.innerHTML =
+              '<div class="alert alert-error">Não foi possível carregar as tarefas. Confirma se db/add_tarefas.sql já foi executado no Supabase.</div>';
+            return false;
+          }
+        }
+
+        const tarefasDisponiveis = await carregarTarefas();
+
+        if (!tarefasDisponiveis) {
+          tarefaTituloEl.disabled = true;
+          tarefasSubmitBtn.disabled = true;
+        }
 
         tarefaFormEl.addEventListener("submit", async (event) => {
           event.preventDefault();
+          if (!tarefasDisponiveis) return;
           const titulo = tarefaTituloEl.value.trim();
           if (!titulo) return;
           try {
@@ -412,8 +427,7 @@
         document.getElementById("perfilContent").style.display = "block";
         } catch (e) {
           console.error(e);
-          loadingEl.textContent =
-            "Erro ao carregar o perfil. Se isto persistir, confirma se db/add_documentos_professor.sql já foi corrido no Supabase.";
+          loadingEl.textContent = "Erro ao preparar o perfil. Consulta a consola do navegador para ver os detalhes.";
         }
       })();
 
