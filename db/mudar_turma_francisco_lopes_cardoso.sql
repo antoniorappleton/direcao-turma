@@ -9,11 +9,20 @@
 -- mudar_turma_aluno exige isso mesmo (fica para a app, a partir de agora,
 -- usar nas próximas mudanças de turma).
 --
--- Execute no SQL Editor do Supabase, depois de db/add_mudar_turma_aluno.sql
--- (garante a coluna matriculas.observacoes e o ano letivo ativo usados
--- abaixo).
+-- Autónomo: não depende da ordem de execução dos outros ficheiros — garante
+-- aqui mesmo a coluna matriculas.observacoes e o ano letivo ativo que usa
+-- abaixo (idêntico ao que db/add_mudar_turma_aluno.sql também faz; CREATE/
+-- ADD COLUMN IF NOT EXISTS, seguro correr os dois em qualquer ordem).
+--
+-- Execute no SQL Editor do Supabase.
 
 BEGIN;
+
+ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS observacoes text;
+
+INSERT INTO anos_letivos (nome, data_inicio, data_fim, ativo)
+SELECT '2026/2027', DATE '2026-09-01', DATE '2027-07-31', true
+WHERE NOT EXISTS (SELECT 1 FROM anos_letivos);
 
 UPDATE matriculas
 SET data_fim = current_date, estado = 'transferida'
