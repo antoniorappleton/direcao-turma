@@ -68,4 +68,18 @@ const AlunosService = {
     });
     if (error) throw error;
   },
+
+  // Muda o aluno de turma (ver db/add_mudar_turma_aluno.sql) — fecha a
+  // matrícula ativa anterior sem a apagar (fica no histórico, ver
+  // getHistoricoMatriculas), abre uma nova na turma de destino e atualiza
+  // alunos.turma_id. O aluno mantém toda a ficha; só a turma muda, e com
+  // ela o DT responsável, que passa a ser o(s) DT da turma nova.
+  async mudarTurma(alunoId, novaTurmaId, motivo) {
+    const { error } = await window.supabase.rpc("mudar_turma_aluno", {
+      p_aluno_id: alunoId,
+      p_nova_turma_id: novaTurmaId,
+      p_motivo: motivo || null,
+    });
+    if (error) throw error;
+  },
 };

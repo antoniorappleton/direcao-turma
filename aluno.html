@@ -54,7 +54,10 @@
               <div>
                 <div class="dt-eyebrow">Ficha individual</div>
                 <h2 id="alunoNome"></h2>
-                <p id="alunoSubtitulo"></p>
+                <p id="alunoSubtitulo">
+                  <span id="alunoSubtituloTexto"></span>
+                  <button id="mudarTurmaBtn" class="icon-btn" title="Mudar de turma" aria-label="Mudar de turma" style="display: none">✎</button>
+                </p>
               </div>
             </div>
           </div>
@@ -476,6 +479,31 @@
       </div>
     </div>
 
+    <div id="mudarTurmaOverlay" class="dt-modal-overlay">
+      <div class="dt-modal" role="dialog" aria-modal="true" aria-labelledby="mudarTurmaDialogTitle">
+        <form id="mudarTurmaForm">
+          <h3 class="app-card-title" id="mudarTurmaDialogTitle" style="margin-bottom: 16px">Mudar de turma</h3>
+
+          <div class="form-group">
+            <label for="mudarTurmaSelect">Nova turma</label>
+            <select id="mudarTurmaSelect" class="form-control" required></select>
+          </div>
+
+          <div class="form-group">
+            <label for="mudarTurmaMotivo">Motivo (opcional)</label>
+            <input type="text" id="mudarTurmaMotivo" class="form-control" placeholder="Ex.: mudança normal de turma" />
+          </div>
+
+          <div id="mudarTurmaMsg"></div>
+
+          <div style="display: flex; gap: 12px; margin-top: 20px">
+            <button type="submit" class="btn btn-primary" style="flex: 2">Mudar de turma</button>
+            <button type="button" id="mudarTurmaCancelBtn" class="btn btn-secondary" style="flex: 1">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <div id="avaliacoesOverlay" class="dt-modal-overlay">
       <div class="dt-modal dt-modal--full" role="dialog" aria-modal="true" aria-labelledby="avaliacoesTitle">
         <div class="dt-aval-header">
@@ -644,7 +672,7 @@
     </div>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.11
+      made by antonio.appleton | Departamento de Programação · v1.1.12
     </footer>
 
     <script>
@@ -686,6 +714,9 @@
           // sério no RLS; o que fica escondido aqui também devolve 0
           // linhas se pedido diretamente à API).
           const veTudo = isDTouAdmin(professor, turma || {});
+          if (veTudo) {
+            document.getElementById("mudarTurmaBtn").style.display = "inline";
+          }
           if (!veTudo) {
             document.querySelector(".dt-student-summary").style.display = "none";
             document.getElementById("editarNumeroBtn").style.display = "none";
@@ -700,7 +731,7 @@
 
           document.getElementById("alunoNome").textContent = aluno.nome;
           document.getElementById("alunoIniciais").textContent = (aluno.nome || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((parte) => parte[0]).join("").toUpperCase();
-          document.getElementById("alunoSubtitulo").textContent = turma
+          document.getElementById("alunoSubtituloTexto").textContent = turma
             ? `${turma.nome} (${turma.ano}º ano)`
             : "";
 
@@ -1022,6 +1053,66 @@
               if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = "Guardar";
+              }
+            }
+          });
+
+          // Mudar de turma — transfere o aluno (com toda a ficha) para
+          // outra turma, fechando a matrícula atual e abrindo uma nova
+          // (ver AlunosService.mudarTurma / db/add_mudar_turma_aluno.sql).
+          // O DT responsável passa a ser automaticamente o(s) DT da turma
+          // nova.
+          const mudarTurmaOverlayEl = document.getElementById("mudarTurmaOverlay");
+          const mudarTurmaFormEl = document.getElementById("mudarTurmaForm");
+          const mudarTurmaMsgEl = document.getElementById("mudarTurmaMsg");
+          const mudarTurmaSelectEl = document.getElementById("mudarTurmaSelect");
+
+          async function abrirMudarTurmaForm() {
+            mudarTurmaMsgEl.innerHTML = "";
+            document.getElementById("mudarTurmaMotivo").value = "";
+            const turmas = await TurmasService.getAll();
+            mudarTurmaSelectEl.innerHTML = turmas
+              .filter((t) => t.id !== aluno.turma_id)
+              .map((t) => `<option value="${t.id}">${t.nome} (${t.ano}º ano)</option>`)
+              .join("");
+            mudarTurmaOverlayEl.classList.add("aberto");
+          }
+
+          function fecharMudarTurmaForm() {
+            mudarTurmaOverlayEl.classList.remove("aberto");
+          }
+
+          document.getElementById("mudarTurmaBtn").addEventListener("click", abrirMudarTurmaForm);
+          document.getElementById("mudarTurmaCancelBtn").addEventListener("click", fecharMudarTurmaForm);
+          mudarTurmaOverlayEl.addEventListener("click", (event) => {
+            if (event.target === mudarTurmaOverlayEl) fecharMudarTurmaForm();
+          });
+          document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && mudarTurmaOverlayEl.classList.contains("aberto")) fecharMudarTurmaForm();
+          });
+
+          mudarTurmaFormEl.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const novaTurmaId = mudarTurmaSelectEl.value;
+            if (!novaTurmaId) {
+              mudarTurmaMsgEl.innerHTML = '<div class="alert alert-error">Escolhe a nova turma.</div>';
+              return;
+            }
+            const motivo = document.getElementById("mudarTurmaMotivo").value.trim();
+            const submitBtn = mudarTurmaFormEl.querySelector("button[type=submit]");
+            if (submitBtn) {
+              submitBtn.disabled = true;
+              submitBtn.textContent = "A mudar…";
+            }
+            try {
+              await AlunosService.mudarTurma(alunoId, novaTurmaId, motivo || null);
+              location.reload();
+            } catch (err) {
+              console.error(err);
+              mudarTurmaMsgEl.innerHTML = '<div class="alert alert-error">Erro ao mudar de turma.</div>';
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Mudar de turma";
               }
             }
           });

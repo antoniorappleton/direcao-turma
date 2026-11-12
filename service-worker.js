@@ -1,4 +1,4 @@
-const CACHE_NAME = "direcao-turma-v48";
+const CACHE_NAME = "direcao-turma-v49";
 const PRECACHE = [
   "./",
   "index.html",
