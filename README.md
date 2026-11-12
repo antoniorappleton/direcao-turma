@@ -77,3 +77,13 @@ ser repostas uma vez para o novo padrão — ver `scripts/reset_teacher_password
   não quebrar o Scriptorium.
 - **Correr `db/add_dt_acesso_avaliacoes.sql`** no SQL Editor do Supabase — garante que ser DT de
   uma turma dá acesso a ela mesmo sem estar em `professor_turmas` (ver nota no onboarding, acima).
+- **Correr, por esta ordem, no SQL Editor do Supabase** (ainda nenhum destes correu em produção):
+  `db/add_turma_diretores.sql` (dois professores podem ser DT da mesma turma em simultâneo —
+  `turma_diretores`, além do DT principal `diretor_turma_id`), `db/set_co_diretor_9a.sql` (torna a
+  Carolina Borges co-DT do 9.ºA, ao lado do Miguel Alain), `db/add_mudar_turma_aluno.sql` (RPC
+  `mudar_turma_aluno` — botão "Mudar de turma" em `aluno.html`, já feito no código: fecha a
+  matrícula atual, abre uma nova na turma de destino e atualiza `alunos.turma_id`, sem perder
+  nenhum dado do aluno; o DT responsável passa a ser automaticamente o(s) DT da turma nova) e
+  `db/mudar_turma_francisco_lopes_cardoso.sql` (ação pontual: 10.ºB → 10.ºB1). Enquanto não
+  correrem, `turmas.service.js` degrada sem rebentar (ignora `turma_diretores` em falta), mas o
+  botão "Mudar de turma" falha até `add_mudar_turma_aluno.sql` ter corrido.

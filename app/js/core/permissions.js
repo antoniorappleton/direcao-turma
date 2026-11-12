@@ -15,13 +15,19 @@ function isAdmin(professor) {
 // serve hoje para apresentação/denormalização no Scriptorium, já não é
 // usado para permissões.
 //
-// Propositadamente sem bypass de admin: representa só "é o diretor desta
-// turma", usado para decidir "as minhas turmas" por defeito no dashboard.
-// Para controlo de acesso (pode ver esta turma, mesmo não sendo o diretor)
-// usar canAccessTurma.
+// Dois professores podem ser DT da mesma turma em simultâneo: além do DT
+// principal (diretor_turma_id), uma turma pode ter DT adicionais em
+// turma_diretores (ver db/add_turma_diretores.sql) — turma.turma_diretores
+// vem já embutido pelo select de TurmasService (getAll/getById/getByDiretor).
+//
+// Propositadamente sem bypass de admin: representa só "é (um dos) diretor
+// desta turma", usado para decidir "as minhas turmas" por defeito no
+// dashboard. Para controlo de acesso (pode ver esta turma, mesmo não sendo
+// o diretor) usar canAccessTurma.
 function isDiretorDaTurma(professor, turma) {
   if (!professor || !turma) return false;
-  return turma.diretor_turma_id === professor.id;
+  if (turma.diretor_turma_id === professor.id) return true;
+  return (turma.turma_diretores || []).some((td) => td.professor_id === professor.id);
 }
 
 // `minhasTurmaIds` é a seleção do próprio professor em professor_turmas
