@@ -42,4 +42,19 @@ const TurmasService = {
       (t) => t.diretor_turma_id === professorId || (t.turma_diretores || []).some((td) => td.professor_id === professorId),
     );
   },
+
+  // Self-service "sou DT desta turma" (ver db/add_confirmar_sou_dt.sql,
+  // usado em minhas-turmas.html) — o professor só consegue confirmar se o
+  // nome dele constar do diretor_turma (texto) já registado na turma; caso
+  // contrário o RPC recusa. Resolve no próprio onboarding o que hoje exigia
+  // um admin corrigir diretor_turma_id à mão.
+  async confirmarSouDT(turmaId) {
+    const { error } = await window.supabase.rpc("confirmar_sou_dt", { p_turma_id: turmaId });
+    if (error) throw error;
+  },
+
+  async retirarSouDT(turmaId) {
+    const { error } = await window.supabase.rpc("retirar_me_dt", { p_turma_id: turmaId });
+    if (error) throw error;
+  },
 };
