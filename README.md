@@ -84,6 +84,13 @@ ser repostas uma vez para o novo padrão — ver `scripts/reset_teacher_password
   `mudar_turma_aluno` — botão "Mudar de turma" em `aluno.html`, já feito no código: fecha a
   matrícula atual, abre uma nova na turma de destino e atualiza `alunos.turma_id`, sem perder
   nenhum dado do aluno; o DT responsável passa a ser automaticamente o(s) DT da turma nova) e
-  `db/mudar_turma_francisco_lopes_cardoso.sql` (ação pontual: 10.ºB → 10.ºB1). Enquanto não
-  correrem, `turmas.service.js` degrada sem rebentar (ignora `turma_diretores` em falta), mas o
-  botão "Mudar de turma" falha até `add_mudar_turma_aluno.sql` ter corrido.
+  `db/mudar_turma_francisco_lopes_cardoso.sql` (ação pontual: 10.ºB → 10.ºB1), `db/set_diretores_turma_2.sql`
+  (continuação de `db/set_diretores_turma.sql` — resolve `diretor_turma_id` em falta para turmas cujo
+  professor só teve conta criada depois desse script) e `db/add_confirmar_sou_dt.sql` (RPC
+  `confirmar_sou_dt`/`retirar_me_dt` — checkbox "Sou DT desta turma" em `minhas-turmas.html`: resolve
+  no próprio onboarding o problema de `set_diretores_turma_2.sql`, sem precisar de admin a corrigir à
+  mão sempre que uma conta é criada; só aceita se o nome do professor constar do `diretor_turma`
+  (texto) já registado nessa turma). Enquanto não correrem, `turmas.service.js` degrada sem rebentar
+  (ignora `turma_diretores` em falta), mas o botão "Mudar de turma" falha até
+  `add_mudar_turma_aluno.sql` ter corrido, e o checkbox "Sou DT desta turma" falha até
+  `add_confirmar_sou_dt.sql` ter corrido.

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Gerir turmas que leciono — Direção de Turma</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/styles.css?v=1.1.21" />
+    <link rel="stylesheet" href="css/styles.css?v=1.1.22" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/core/config.js"></script>
     <script src="js/core/session.js"></script>
@@ -42,7 +42,8 @@
           <p id="introMsg" style="color: var(--text-muted); font-size: 13px; margin: 0 0 20px">
             Estas são as turmas que aparecem no painel "Turmas que leciono" — podes voltar aqui para
             atualizar a qualquer momento. As turmas de que és diretor de turma aparecem sempre, de forma
-            automática, no Painel DT, independentemente desta seleção.
+            automática, no Painel DT, independentemente desta seleção. Se não apareceres como DT de uma
+            turma que deverias dirigir, marca "Sou DT desta turma" abaixo.
           </p>
 
           <div id="turmasChecklist"></div>
@@ -58,7 +59,7 @@
     </main>
 
     <footer style="padding: 14px 0; text-align: center; color: var(--text-muted); font-size: 12px">
-      made by antonio.appleton | Departamento de Programação · v1.1.12
+      made by antonio.appleton | Departamento de Programação · v1.1.13
     </footer>
 
     <script>
@@ -112,13 +113,23 @@
                 <div class="dt-checklist-group-title">${ciclo}</div>
                 <div class="dt-checkbox-row">
                   ${turmas
-                    .map(
-                      (t) => `
-                      <label>
-                        <input type="checkbox" class="turma-check" value="${t.id}" ${selecaoInicial.has(t.id) ? "checked" : ""} />
-                        ${t.nome} (${t.ano}º ano)${isDiretorDaTurma(professor, t) ? " · DT" : ""}
-                      </label>`,
-                    )
+                    .map((t) => {
+                      const souDT = isDiretorDaTurma(professor, t);
+                      return `
+                      <div class="dt-checkbox-row-item">
+                        <label>
+                          <input type="checkbox" class="turma-check" value="${t.id}" ${selecaoInicial.has(t.id) ? "checked" : ""} />
+                          ${t.nome} (${t.ano}º ano)
+                        </label>
+                        ${
+                          souDT
+                            ? '<span class="dt-class-dt-tag">DT</span>'
+                            : `<label class="dt-sou-dt-label" style="font-size: 12px; color: var(--text-muted)">
+                                <input type="checkbox" class="dt-check" value="${t.id}" /> Sou DT desta turma
+                              </label>`
+                        }
+                      </div>`;
+                    })
                     .join("")}
                 </div>
               </div>`,
@@ -127,11 +138,33 @@
 
           document.getElementById("guardarBtn").addEventListener("click", async () => {
             const selecionadas = Array.from(document.querySelectorAll(".turma-check:checked")).map((cb) => cb.value);
+            const dtMarcadas = Array.from(document.querySelectorAll(".dt-check:checked")).map((cb) => cb.value);
             const btn = document.getElementById("guardarBtn");
             btn.disabled = true;
             btn.textContent = "A guardar…";
             try {
               await ProfessorTurmasService.setTurmas(professor.id, selecionadas);
+
+              // "Sou DT desta turma" — cada confirmação é independente; se
+              // uma falhar (ex.: nome não corresponde ao DT registado), as
+              // outras continuam e o erro aparece sem bloquear o resto.
+              const erros = [];
+              for (const turmaId of dtMarcadas) {
+                try {
+                  await TurmasService.confirmarSouDT(turmaId);
+                } catch (err) {
+                  console.error(err);
+                  erros.push(err.message || "Erro ao confirmar DT.");
+                }
+              }
+
+              if (erros.length) {
+                formMsgEl.innerHTML = `<div class="alert alert-error">${erros.join("<br />")}</div>`;
+                btn.disabled = false;
+                btn.textContent = "Guardar";
+                return;
+              }
+
               window.location.href = "turmas-leciono.html";
             } catch (err) {
               console.error(err);
